@@ -1,5 +1,5 @@
 const SUPABASE_URL = "https://dmjctzpgondlavluwury.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRtamN0enBnb25kbGF2bHV3dXJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MDc5MTEsImV4cCI6MjA5MzM4MzkxMX0.9ZK4h4Bt87PkFwy7zyuDA4cMZMGuEwPw8xZ1jK3MgVA";
+const SUPABASE_KEY = "";
 
 // -------------------- STATE --------------------
 let doneOpen = localStorage.getItem("doneOpen") === "true";
