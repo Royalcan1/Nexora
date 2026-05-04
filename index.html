@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Nexora</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="top-header">
+    <div class="header-inner">
+      <div class="logo">
+        <svg viewBox="0 0 64 64" class="logo-icon">
+          <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="3" fill="none"/>
+          <path d="M22 44V20l20 24V20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </svg>
+        <span>Nexora</span>
+      </div>
+      <div class="auth-buttons">
+        <button class="auth-btn">Se connecter</button>
+        <button class="auth-btn primary">S'inscrire</button>
+        <div class="more-menu">
+          <button class="more-btn" onclick="toggleMoreMenu()">⋯</button>
+          <div id="more-dropdown" class="more-dropdown closed">
+            <div class="more-item">📊 Dashboard</div>
+            <div class="more-item">💬 Support</div>
+            <div class="more-item">📩 Contact</div>
+            <div class="more-item">ℹ️ À propos</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app">
+    <div class="hero">
+      <h1>Organise ta journée simplement</h1>
+      <p class="subtitle">
+        Nexora t'aide à structurer tes tâches,<br>
+        rester concentré et avancer chaque jour.
+      </p>
+    </div>
+    <textarea id="input" placeholder="Ex: maths examen demain + devoir français + réviser bio"></textarea>
+    <div class="top-actions">
+      <button class="btn primary" onclick="addTask()">➕ Ajouter tâches</button>
+    </div>
+    <div id="output"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js"></script>
+
+</body>
+</html>
