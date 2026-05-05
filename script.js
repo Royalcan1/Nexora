@@ -275,6 +275,10 @@ async function loadTasks() {
 
 window.toggleTask = async function(id, currentDone) {
   if (!id) return;
+
+  // On regarde combien de tâches étaient en cours AVANT le toggle
+  const activeBeforeCount = tasks.filter(t => !t.done).length;
+
   const { data, error } = await db
     .from("tasks")
     .update({ done: !currentDone })
@@ -285,6 +289,14 @@ window.toggleTask = async function(id, currentDone) {
     return;
   }
   console.log("UPDATED TASK =", data);
+
+  // Si on vient de cocher (passer en done) ET qu'il ne restera plus de tâches actives
+  // -> c'était la dernière, on célèbre 🎉
+  const justCompleted = !currentDone; // currentDone était false, donc on a coché
+  if (justCompleted && activeBeforeCount === 1) {
+    celebrate();
+  }
+
   await loadTasks();
 };
 
@@ -442,6 +454,44 @@ function getTime(text) {
   if (/\b(devoir|interro|interrogation|test|évaluation|evaluation)\b/.test(text)) return "1h";
   if (/\b(révision|revision|réviser|reviser|fiche|lecture|lire|exercice|exo|relire)\b/.test(text)) return "45 min";
   return "30 min";
+}
+
+// ==========================================
+//  🎉 CONFETTIS — célébration de fin de tâches
+// ==========================================
+
+function celebrate() {
+  if (typeof confetti !== "function") return; // sécurité si la lib pas chargée
+
+  const duration = 2000; // 2 secondes
+  const end = Date.now() + duration;
+
+  // Première salve : depuis le centre, vers le haut
+  confetti({
+    particleCount: 80,
+    spread: 70,
+    origin: { y: 0.6 },
+    colors: ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#a855f7"]
+  });
+
+  // Salves continues depuis les côtés pendant 2 secondes
+  (function frame() {
+    confetti({
+      particleCount: 3,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0, y: 0.7 },
+      colors: ["#3b82f6", "#22c55e", "#f59e0b"]
+    });
+    confetti({
+      particleCount: 3,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1, y: 0.7 },
+      colors: ["#ef4444", "#a855f7", "#22c55e"]
+    });
+    if (Date.now() < end) requestAnimationFrame(frame);
+  }());
 }
 
 // ==========================================
