@@ -32,10 +32,10 @@
         <div class="more-menu">
           <button class="more-btn" onclick="toggleMoreMenu()">⋯</button>
           <div id="more-dropdown" class="more-dropdown closed">
-            <div class="more-item">📊 Dashboard</div>
-            <div class="more-item">💬 Support</div>
-            <div class="more-item">📩 Contact</div>
-            <div class="more-item">ℹ️ À propos</div>
+            <div class="more-item" onclick="showInfoModal('dashboard')">📊 Dashboard</div>
+            <div class="more-item" onclick="showInfoModal('support')">💬 Support</div>
+            <div class="more-item" onclick="showInfoModal('contact')">📩 Contact</div>
+            <div class="more-item" onclick="showInfoModal('about')">ℹ️ À propos</div>
           </div>
         </div>
       </div>
@@ -90,19 +90,29 @@
       </p>
     </div>
   </div>
-  <!-- Modal pour définir le nouveau mot de passe (après clic sur lien email) -->
-<div id="reset-modal" class="auth-modal closed">
-  <div class="auth-modal-content">
-    <h2>Nouveau mot de passe</h2>
-    <p class="auth-info">Choisis un nouveau mot de passe pour ton compte.</p>
-    <input type="password" id="reset-password" placeholder="Nouveau mot de passe (min. 6 caractères)" autocomplete="new-password">
-    <div id="reset-error" class="auth-error"></div>
-    <button class="btn primary" onclick="submitNewPassword()">Valider</button>
+
+  <!-- Modal pour définir le nouveau mot de passe -->
+  <div id="reset-modal" class="auth-modal closed">
+    <div class="auth-modal-content">
+      <h2>Nouveau mot de passe</h2>
+      <p class="auth-info">Choisis un nouveau mot de passe pour ton compte.</p>
+      <input type="password" id="reset-password" placeholder="Nouveau mot de passe (min. 6 caractères)" autocomplete="new-password">
+      <div id="reset-error" class="auth-error"></div>
+      <button class="btn primary" onclick="submitNewPassword()">Valider</button>
+    </div>
   </div>
-</div>
+
+  <!-- Modal d'information générique (Dashboard, Support, Contact, À propos) -->
+  <div id="info-modal" class="auth-modal closed">
+    <div class="auth-modal-content info-modal-content">
+      <button class="auth-close" onclick="hideInfoModal()">✕</button>
+      <div id="info-modal-body"></div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="script.js"></script>
 
 </body>
 </html>
+
