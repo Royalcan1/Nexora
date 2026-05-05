@@ -304,6 +304,25 @@ window.deleteTask = async function(id) {
   console.log("DELETED =", id);
   await loadTasks();
 };
+window.clearDoneTasks = async function(event) {
+  // Empêche le clic de propager au header (qui ouvre/ferme la section)
+  if (event) event.stopPropagation();
+
+  const doneTasks = tasks.filter(t => t.done);
+  if (doneTasks.length === 0) return;
+
+  const confirmed = confirm(`Supprimer les ${doneTasks.length} tâche(s) terminée(s) ?`);
+  if (!confirmed) return;
+
+  const ids = doneTasks.map(t => t.id);
+  const { error } = await db.from("tasks").delete().in("id", ids);
+  if (error) {
+    console.error("CLEAR DONE ERROR =", error);
+    return;
+  }
+  console.log("CLEARED DONE TASKS =", ids);
+  await loadTasks();
+};
 window.editTask = async function(id, newText) {
   if (!id) return;
   newText = newText.trim();
@@ -361,7 +380,10 @@ function render() {
   });
   html += `</div></div>
     <div class="done-section">
-      <div class="done-header" onclick="toggleDoneSection()">Tâches terminées (${done.length})</div>
+      <div class="done-header" onclick="toggleDoneSection()">
+  <span>Tâches terminées (${done.length})</span>
+  ${done.length > 0 ? `<button class="clear-btn" onclick="clearDoneTasks(event)" title="Tout supprimer">🗑️ Vider</button>` : ""}
+</div>
       <div id="done-list" class="${doneOpen ? "open" : "closed"}">`;
   done.forEach((t) => {
     html += `<div class="task done">
