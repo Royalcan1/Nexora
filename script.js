@@ -8,6 +8,12 @@ const SUPABASE_KEY = "sb_publishable_I4_a8MSGS0cFFRD_p2DMdg_pPm3W3Cr";
 // ⚠️ On nomme notre client "db" et pas "supabase" pour éviter
 // un conflit avec la variable globale "supabase" créée par le CDN.
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ==========================================
+//  DÉTECTION DU RETOUR DEPUIS L'EMAIL DE RESET
+// ==========================================
+// Quand l'utilisateur clique le lien dans l'email, Supabase le redirige
+// avec un fragment d'URL. On l'écoute via onAuthStateChange (PASSWORD_RECOVERY).
+let isPasswordRecovery = false;
 
 // ==========================================
 //  ÉTAT GLOBAL
@@ -27,9 +33,15 @@ async function initAuth() {
   const { data: { session } } = await db.auth.getSession();
   handleAuthChange(session);
 
-  db.auth.onAuthStateChange((_event, session) => {
-    handleAuthChange(session);
-  });
+  db.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY") {
+    // L'utilisateur arrive depuis un lien de reset → on lui montre le modal
+    isPasswordRecovery = true;
+    showResetModal();
+    return;
+  }
+  handleAuthChange(session);
+});
 }
 
 function handleAuthChange(session) {
@@ -150,6 +162,76 @@ async function submitAuth() {
 async function logout() {
   await db.auth.signOut();
   console.log("LOGOUT OK");
+}
+// ==========================================
+//  AUTH — MOT DE PASSE OUBLIÉ
+// ==========================================
+
+async function showResetPassword() {
+  const email = document.getElementById("auth-email").value.trim();
+  const errorEl = document.getElementById("auth-error");
+  errorEl.textContent = "";
+
+  if (!email) {
+    errorEl.textContent = "Entre d'abord ton email ci-dessus, puis re-clique.";
+    document.getElementById("auth-email").focus();
+    return;
+  }
+
+  try {
+    const { error } = await db.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin
+    });
+    if (error) throw error;
+    errorEl.style.color = "#22c55e"; // vert pour message de succès
+    errorEl.textContent = "Email envoyé ! Vérifie ta boîte mail.";
+    setTimeout(() => { errorEl.style.color = ""; }, 4000);
+  } catch (err) {
+    console.error("RESET ERROR =", err);
+    errorEl.textContent = err.message || "Erreur lors de l'envoi.";
+  }
+}
+
+function showResetModal() {
+  hideAuthModal();
+  document.getElementById("reset-error").textContent = "";
+  document.getElementById("reset-password").value = "";
+  const modal = document.getElementById("reset-modal");
+  modal.classList.remove("closed");
+  modal.classList.add("open");
+  setTimeout(() => document.getElementById("reset-password").focus(), 100);
+}
+
+function hideResetModal() {
+  const modal = document.getElementById("reset-modal");
+  modal.classList.remove("open");
+  modal.classList.add("closed");
+}
+
+async function submitNewPassword() {
+  const password = document.getElementById("reset-password").value;
+  const errorEl = document.getElementById("reset-error");
+  errorEl.textContent = "";
+
+  if (!password || password.length < 6) {
+    errorEl.textContent = "Mot de passe trop court (min. 6 caractères).";
+    return;
+  }
+
+  try {
+    const { error } = await db.auth.updateUser({ password });
+    if (error) throw error;
+    console.log("PASSWORD UPDATED");
+    isPasswordRecovery = false;
+    hideResetModal();
+    // L'utilisateur est déjà connecté grâce au token de récupération,
+    // on déclenche juste le rafraîchissement de l'UI
+    const { data: { session } } = await db.auth.getSession();
+    handleAuthChange(session);
+  } catch (err) {
+    console.error("UPDATE PASSWORD ERROR =", err);
+    errorEl.textContent = err.message || "Erreur lors de la mise à jour.";
+  }
 }
 
 // ==========================================
