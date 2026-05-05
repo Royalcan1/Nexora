@@ -82,6 +82,7 @@
       <input type="email" id="auth-email" placeholder="Email" autocomplete="email">
       <input type="password" id="auth-password" placeholder="Mot de passe (min. 6 caractères)" autocomplete="current-password">
       <div id="auth-error" class="auth-error"></div>
+      <a href="#" class="auth-forgot" id="auth-forgot-link" onclick="showResetPassword(); return false;">Mot de passe oublié ?</a>
       <button class="btn primary" id="auth-submit" onclick="submitAuth()">Se connecter</button>
       <p class="auth-switch">
         <span id="auth-switch-text">Pas encore de compte ?</span>
@@ -89,6 +90,16 @@
       </p>
     </div>
   </div>
+  <!-- Modal pour définir le nouveau mot de passe (après clic sur lien email) -->
+<div id="reset-modal" class="auth-modal closed">
+  <div class="auth-modal-content">
+    <h2>Nouveau mot de passe</h2>
+    <p class="auth-info">Choisis un nouveau mot de passe pour ton compte.</p>
+    <input type="password" id="reset-password" placeholder="Nouveau mot de passe (min. 6 caractères)" autocomplete="new-password">
+    <div id="reset-error" class="auth-error"></div>
+    <button class="btn primary" onclick="submitNewPassword()">Valider</button>
+  </div>
+</div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="script.js"></script>
