@@ -419,18 +419,56 @@ function toggleMoreMenu() {
 //  HELPERS — détection priorité / temps
 // ==========================================
 
+// ==========================================
+//  HELPERS — détection priorité / temps (v2)
+// ==========================================
+
 function getPriority(text) {
   text = text.toLowerCase();
-  if (text.includes("examen") || text.includes("exam") || text.includes("contrôle") || text.includes("controle") || text.includes("demain") || text.includes("urgent")) return "urgent";
-  if (text.includes("devoir") || text.includes("dm") || text.includes("révision") || text.includes("revision") || text.includes("test")) return "medium";
+  let score = 0;
+
+  // Axe 1 : type d'évaluation
+  if (/\b(examen|exam|contrôle|controle|partiel|partielle|bac|brevet|oral|concours)\b/.test(text)) score += 3;
+  else if (/\b(ds|devoir surveillé|devoir surveille|interro|interrogation|test|évaluation|evaluation)\b/.test(text)) score += 2;
+  else if (/\b(dm|devoir maison|devoir|exposé|expose|dossier|projet|rapport|rendu)\b/.test(text)) score += 1;
+  else if (/\b(révision|revision|réviser|reviser|fiche|lecture|lire|exercice|exo)\b/.test(text)) score += 0.5;
+
+  // Axe 2 : échéance temporelle
+  if (/\b(aujourd'hui|aujourdhui|ce soir|ce midi|tout de suite|maintenant|asap)\b/.test(text)) score += 3;
+  else if (/\b(demain|ce soir)\b/.test(text)) score += 3;
+  else if (/\b(après-demain|apres-demain|après demain|apres demain|dans 2 jours)\b/.test(text)) score += 2;
+  else if (/\b(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b/.test(text)) score += 2;
+  else if (/\b(cette semaine|d'ici (vendredi|jeudi|mercredi))\b/.test(text)) score += 1.5;
+  else if (/\b(la semaine prochaine|semaine prochaine|dans (3|4|5|6|7) jours)\b/.test(text)) score += 1;
+  else if (/\b(dans 2 semaines|dans deux semaines|le mois prochain|dans un mois)\b/.test(text)) score += 0.5;
+
+  // Axe 3 : mots d'urgence explicite
+  if (/\b(urgent|urgente|important|importante|vite|priorité|priorite)\b/.test(text)) score += 2;
+  if (text.includes("!!")) score += 1;
+
+  // Conversion score → priorité
+  if (score >= 4) return "urgent";
+  if (score >= 2) return "medium";
   return "normal";
 }
 
 function getTime(text) {
   text = text.toLowerCase();
-  if (text.includes("examen") || text.includes("exam") || text.includes("controle") || text.includes("contrôle") || text.includes("urgent")) return "1h30";
-  if (text.includes("devoir") || text.includes("dm") || text.includes("révision") || text.includes("revision")) return "1h";
-  return "45 min";
+
+  // Examens et oraux : préparation longue
+  if (/\b(examen|exam|contrôle|controle|partiel|partielle|bac|brevet|oral|concours|ds|devoir surveillé|devoir surveille)\b/.test(text)) return "2h";
+
+  // Travaux écrits avec rendu : moyens
+  if (/\b(dm|devoir maison|exposé|expose|dossier|projet|rapport|rendu)\b/.test(text)) return "1h30";
+
+  // Devoirs courts et tests : standard
+  if (/\b(devoir|interro|interrogation|test|évaluation|evaluation)\b/.test(text)) return "1h";
+
+  // Révisions et lectures : courtes
+  if (/\b(révision|revision|réviser|reviser|fiche|lecture|lire|exercice|exo|relire)\b/.test(text)) return "45 min";
+
+  // Reste : tâches normales
+  return "30 min";
 }
 
 // ==========================================
