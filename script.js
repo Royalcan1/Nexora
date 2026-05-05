@@ -290,9 +290,8 @@ window.toggleTask = async function(id, currentDone) {
   }
   console.log("UPDATED TASK =", data);
 
-  // Si on vient de cocher (passer en done) ET qu'il ne restera plus de tâches actives
-  // -> c'était la dernière, on célèbre 🎉
-  const justCompleted = !currentDone; // currentDone était false, donc on a coché
+  // Si on vient de cocher la dernière tâche en cours -> on célèbre 🎉
+  const justCompleted = !currentDone;
   if (justCompleted && activeBeforeCount === 1) {
     celebrate();
   }
@@ -457,13 +456,48 @@ function getTime(text) {
 }
 
 // ==========================================
-//  🎉 CONFETTIS — célébration de fin de tâches
+//  🎉 CONFETTIS + TOAST DE FIN DE TÂCHES
 // ==========================================
 
-function celebrate() {
-  if (typeof confetti !== "function") return; // sécurité si la lib pas chargée
+const COMPLETION_MESSAGES = [
+  { title: "Bravo !", subtitle: "Toutes tes tâches sont terminées." },
+  { title: "Tout est fait 👏", subtitle: "Tu peux souffler, c'est mérité." },
+  { title: "Mission accomplie", subtitle: "Plus rien sur ta liste — profite-en." },
+  { title: "Journée bouclée", subtitle: "Tu as tout terminé, beau travail." },
+  { title: "Zéro tâche en attente", subtitle: "Le calme après l'effort." },
+  { title: "Liste vide ✨", subtitle: "Rien à faire, et c'est bien." }
+];
 
-  const duration = 2000; // 2 secondes
+function showCompletionToast() {
+  const msg = COMPLETION_MESSAGES[Math.floor(Math.random() * COMPLETION_MESSAGES.length)];
+
+  const existing = document.getElementById("completion-toast");
+  if (existing) existing.remove();
+
+  const toast = document.createElement("div");
+  toast.id = "completion-toast";
+  toast.className = "completion-toast";
+  toast.innerHTML = `
+    <div class="completion-toast-title">${msg.title}</div>
+    <div class="completion-toast-subtitle">${msg.subtitle}</div>
+  `;
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(() => toast.classList.add("show"));
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 400);
+  }, 3500);
+}
+
+function celebrate() {
+  if (typeof confetti !== "function") return;
+
+  // Affiche le toast de félicitations
+  showCompletionToast();
+
+  const duration = 2000;
   const end = Date.now() + duration;
 
   // Première salve : depuis le centre, vers le haut
@@ -532,7 +566,6 @@ const CREATOR_NAME = "Nicolas";
 const APP_VERSION = "0.2";
 
 function showInfoModal(type) {
-  // Ferme le menu déroulant
   const menu = document.getElementById("more-dropdown");
   menu.classList.remove("open");
   menu.classList.add("closed");
@@ -559,14 +592,12 @@ function renderInfoModalContent(type) {
   return "";
 }
 
-// 📊 DASHBOARD
 function renderDashboard() {
   const total = tasks.length;
   const done = tasks.filter(t => t.done).length;
   const active = total - done;
   const completion = total > 0 ? Math.round((done / total) * 100) : 0;
 
-  // Tâches actives par priorité
   const urgentCount = tasks.filter(t => !t.done && t.priority === "urgent").length;
   const mediumCount = tasks.filter(t => !t.done && t.priority === "medium").length;
   const normalCount = tasks.filter(t => !t.done && t.priority === "normal").length;
@@ -633,7 +664,6 @@ function renderDashboard() {
   `;
 }
 
-// 💬 SUPPORT
 function renderSupport() {
   return `
     <h2>💬 Support</h2>
@@ -676,7 +706,6 @@ function renderSupport() {
   `;
 }
 
-// 📩 CONTACT
 function renderContact() {
   const subject = encodeURIComponent("Contact Nexora");
   const body = encodeURIComponent("Bonjour,\n\n");
@@ -700,7 +729,6 @@ function renderContact() {
   `;
 }
 
-// ℹ️ À PROPOS
 function renderAbout() {
   const year = new Date().getFullYear();
   return `
@@ -756,7 +784,6 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// Ferme le menu déroulant si on clique ailleurs
 document.addEventListener("click", (e) => {
   const menu = document.getElementById("more-dropdown");
   const moreBtn = document.querySelector(".more-btn");
