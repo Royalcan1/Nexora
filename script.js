@@ -4,16 +4,7 @@
 const SUPABASE_URL = "https://dmjctzpgondlavluwury.supabase.co";
 const SUPABASE_KEY = "sb_publishable_I4_a8MSGS0cFFRD_p2DMdg_pPm3W3Cr";
 
-// On utilise le client officiel Supabase chargé via le CDN.
-// ⚠️ On nomme notre client "db" et pas "supabase" pour éviter
-// un conflit avec la variable globale "supabase" créée par le CDN.
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-// ==========================================
-//  DÉTECTION DU RETOUR DEPUIS L'EMAIL DE RESET
-// ==========================================
-// Quand l'utilisateur clique le lien dans l'email, Supabase le redirige
-// avec un fragment d'URL. On l'écoute via onAuthStateChange (PASSWORD_RECOVERY).
-let isPasswordRecovery = false;
 
 // ==========================================
 //  ÉTAT GLOBAL
@@ -21,7 +12,8 @@ let isPasswordRecovery = false;
 let doneOpen = localStorage.getItem("doneOpen") === "true";
 let tasks = [];
 let currentUser = null;
-let authMode = "login"; // "login" ou "signup"
+let authMode = "login";
+let isPasswordRecovery = false;
 
 console.log("JS CHARGE OK");
 
@@ -34,14 +26,13 @@ async function initAuth() {
   handleAuthChange(session);
 
   db.auth.onAuthStateChange((event, session) => {
-  if (event === "PASSWORD_RECOVERY") {
-    // L'utilisateur arrive depuis un lien de reset → on lui montre le modal
-    isPasswordRecovery = true;
-    showResetModal();
-    return;
-  }
-  handleAuthChange(session);
-});
+    if (event === "PASSWORD_RECOVERY") {
+      isPasswordRecovery = true;
+      showResetModal();
+      return;
+    }
+    handleAuthChange(session);
+  });
 }
 
 function handleAuthChange(session) {
@@ -83,6 +74,7 @@ function showAuthModal(mode) {
   authMode = mode;
   updateAuthModalUI();
   document.getElementById("auth-error").textContent = "";
+  document.getElementById("auth-error").style.color = "";
   document.getElementById("auth-email").value = "";
   document.getElementById("auth-password").value = "";
   const modal = document.getElementById("auth-modal");
@@ -101,6 +93,7 @@ function switchAuthMode() {
   authMode = authMode === "login" ? "signup" : "login";
   updateAuthModalUI();
   document.getElementById("auth-error").textContent = "";
+  document.getElementById("auth-error").style.color = "";
 }
 
 function updateAuthModalUI() {
@@ -127,6 +120,7 @@ async function submitAuth() {
   const password = document.getElementById("auth-password").value;
   const errorEl = document.getElementById("auth-error");
   errorEl.textContent = "";
+  errorEl.style.color = "";
 
   if (!email || !password) {
     errorEl.textContent = "Email et mot de passe requis.";
@@ -163,6 +157,7 @@ async function logout() {
   await db.auth.signOut();
   console.log("LOGOUT OK");
 }
+
 // ==========================================
 //  AUTH — MOT DE PASSE OUBLIÉ
 // ==========================================
@@ -171,6 +166,7 @@ async function showResetPassword() {
   const email = document.getElementById("auth-email").value.trim();
   const errorEl = document.getElementById("auth-error");
   errorEl.textContent = "";
+  errorEl.style.color = "";
 
   if (!email) {
     errorEl.textContent = "Entre d'abord ton email ci-dessus, puis re-clique.";
@@ -183,7 +179,7 @@ async function showResetPassword() {
       redirectTo: window.location.origin
     });
     if (error) throw error;
-    errorEl.style.color = "#22c55e"; // vert pour message de succès
+    errorEl.style.color = "#22c55e";
     errorEl.textContent = "Email envoyé ! Vérifie ta boîte mail.";
     setTimeout(() => { errorEl.style.color = ""; }, 4000);
   } catch (err) {
@@ -224,8 +220,6 @@ async function submitNewPassword() {
     console.log("PASSWORD UPDATED");
     isPasswordRecovery = false;
     hideResetModal();
-    // L'utilisateur est déjà connecté grâce au token de récupération,
-    // on déclenche juste le rafraîchissement de l'UI
     const { data: { session } } = await db.auth.getSession();
     handleAuthChange(session);
   } catch (err) {
@@ -235,7 +229,7 @@ async function submitNewPassword() {
 }
 
 // ==========================================
-//  TÂCHES — CRUD via le client Supabase
+//  TÂCHES — CRUD
 // ==========================================
 
 async function addTask() {
@@ -304,34 +298,14 @@ window.deleteTask = async function(id) {
   console.log("DELETED =", id);
   await loadTasks();
 };
-window.clearDoneTasks = async function(event) {
-  // Empêche le clic de propager au header (qui ouvre/ferme la section)
-  if (event) event.stopPropagation();
 
-  const doneTasks = tasks.filter(t => t.done);
-  if (doneTasks.length === 0) return;
-
-  const confirmed = confirm(`Supprimer les ${doneTasks.length} tâche(s) terminée(s) ?`);
-  if (!confirmed) return;
-
-  const ids = doneTasks.map(t => t.id);
-  const { error } = await db.from("tasks").delete().in("id", ids);
-  if (error) {
-    console.error("CLEAR DONE ERROR =", error);
-    return;
-  }
-  console.log("CLEARED DONE TASKS =", ids);
-  await loadTasks();
-};
 window.editTask = async function(id, newText) {
   if (!id) return;
   newText = newText.trim();
   if (!newText) {
-    // Si l'utilisateur a vidé le champ, on annule (on recharge sans modifier)
     await loadTasks();
     return;
   }
-  // On recalcule la priorité et le temps en fonction du nouveau texte
   const { data, error } = await db
     .from("tasks")
     .update({
@@ -349,6 +323,24 @@ window.editTask = async function(id, newText) {
   await loadTasks();
 };
 
+window.clearDoneTasks = async function(event) {
+  if (event) event.stopPropagation();
+  const doneTasks = tasks.filter(t => t.done);
+  if (doneTasks.length === 0) return;
+
+  const confirmed = confirm(`Supprimer les ${doneTasks.length} tâche(s) terminée(s) ?`);
+  if (!confirmed) return;
+
+  const ids = doneTasks.map(t => t.id);
+  const { error } = await db.from("tasks").delete().in("id", ids);
+  if (error) {
+    console.error("CLEAR DONE ERROR =", error);
+    return;
+  }
+  console.log("CLEARED DONE TASKS =", ids);
+  await loadTasks();
+};
+
 // ==========================================
 //  RENDU & UI TÂCHES
 // ==========================================
@@ -362,7 +354,6 @@ function render() {
       <div class="done-header" onclick="toggleActiveSection()">Tâches en cours (${active.length})</div>
       <div id="active-list" class="open">`;
   active.forEach((t) => {
-    // On échappe les guillemets dans le texte pour éviter de casser le HTML
     const safeText = t.text.replace(/"/g, "&quot;");
     html += `<div class="task ${t.priority}" id="task-${t.id}">
       <button class="check-btn" onclick="toggleTask(${t.id}, ${t.done})"></button>
@@ -381,9 +372,9 @@ function render() {
   html += `</div></div>
     <div class="done-section">
       <div class="done-header" onclick="toggleDoneSection()">
-  <span>Tâches terminées (${done.length})</span>
-  ${done.length > 0 ? `<button class="clear-btn" onclick="clearDoneTasks(event)" title="Tout supprimer">🗑️ Vider</button>` : ""}
-</div>
+        <span>Tâches terminées (${done.length})</span>
+        ${done.length > 0 ? `<button class="clear-btn" onclick="clearDoneTasks(event)" title="Tout supprimer">🗑️ Vider</button>` : ""}
+      </div>
       <div id="done-list" class="${doneOpen ? "open" : "closed"}">`;
   done.forEach((t) => {
     html += `<div class="task done">
@@ -416,10 +407,6 @@ function toggleMoreMenu() {
 }
 
 // ==========================================
-//  HELPERS — détection priorité / temps
-// ==========================================
-
-// ==========================================
 //  HELPERS — détection priorité / temps (v2)
 // ==========================================
 
@@ -427,13 +414,11 @@ function getPriority(text) {
   text = text.toLowerCase();
   let score = 0;
 
-  // Axe 1 : type d'évaluation
   if (/\b(examen|exam|contrôle|controle|partiel|partielle|bac|brevet|oral|concours)\b/.test(text)) score += 3;
   else if (/\b(ds|devoir surveillé|devoir surveille|interro|interrogation|test|évaluation|evaluation)\b/.test(text)) score += 2;
   else if (/\b(dm|devoir maison|devoir|exposé|expose|dossier|projet|rapport|rendu)\b/.test(text)) score += 1;
   else if (/\b(révision|revision|réviser|reviser|fiche|lecture|lire|exercice|exo)\b/.test(text)) score += 0.5;
 
-  // Axe 2 : échéance temporelle
   if (/\b(aujourd'hui|aujourdhui|ce soir|ce midi|tout de suite|maintenant|asap)\b/.test(text)) score += 3;
   else if (/\b(demain|ce soir)\b/.test(text)) score += 3;
   else if (/\b(après-demain|apres-demain|après demain|apres demain|dans 2 jours)\b/.test(text)) score += 2;
@@ -442,11 +427,9 @@ function getPriority(text) {
   else if (/\b(la semaine prochaine|semaine prochaine|dans (3|4|5|6|7) jours)\b/.test(text)) score += 1;
   else if (/\b(dans 2 semaines|dans deux semaines|le mois prochain|dans un mois)\b/.test(text)) score += 0.5;
 
-  // Axe 3 : mots d'urgence explicite
   if (/\b(urgent|urgente|important|importante|vite|priorité|priorite)\b/.test(text)) score += 2;
   if (text.includes("!!")) score += 1;
 
-  // Conversion score → priorité
   if (score >= 4) return "urgent";
   if (score >= 2) return "medium";
   return "normal";
@@ -454,53 +437,24 @@ function getPriority(text) {
 
 function getTime(text) {
   text = text.toLowerCase();
-
-  // Examens et oraux : préparation longue
   if (/\b(examen|exam|contrôle|controle|partiel|partielle|bac|brevet|oral|concours|ds|devoir surveillé|devoir surveille)\b/.test(text)) return "2h";
-
-  // Travaux écrits avec rendu : moyens
   if (/\b(dm|devoir maison|exposé|expose|dossier|projet|rapport|rendu)\b/.test(text)) return "1h30";
-
-  // Devoirs courts et tests : standard
   if (/\b(devoir|interro|interrogation|test|évaluation|evaluation)\b/.test(text)) return "1h";
-
-  // Révisions et lectures : courtes
   if (/\b(révision|revision|réviser|reviser|fiche|lecture|lire|exercice|exo|relire)\b/.test(text)) return "45 min";
-
-  // Reste : tâches normales
   return "30 min";
 }
 
 // ==========================================
-//  BONUS — Soumettre l'auth avec Entrée / fermer avec Échap
-// ==========================================
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    const modal = document.getElementById("auth-modal");
-    if (modal.classList.contains("open")) {
-      submitAuth();
-    }
-  }
-  if (e.key === "Escape") {
-    const modal = document.getElementById("auth-modal");
-    if (modal.classList.contains("open")) {
-      hideAuthModal();
-    }
-  }
-});
-
-// ==========================================
-//  ÉDITION INLINE D'UNE TÂCHE
+//  ÉDITION INLINE
 // ==========================================
 
 function handleEditKey(event, el) {
   if (event.key === "Enter") {
-    event.preventDefault(); // empêche le retour à la ligne
-    el.blur(); // déclenche finishEdit
+    event.preventDefault();
+    el.blur();
   }
   if (event.key === "Escape") {
     event.preventDefault();
-    // On restaure le texte original et on quitte l'édition
     el.textContent = el.dataset.original;
     el.dataset.cancelled = "true";
     el.blur();
@@ -508,7 +462,6 @@ function handleEditKey(event, el) {
 }
 
 function finishEdit(el) {
-  // Si l'édition a été annulée par Échap, on ne sauvegarde pas
   if (el.dataset.cancelled === "true") {
     delete el.dataset.cancelled;
     return;
@@ -516,10 +469,253 @@ function finishEdit(el) {
   const id = el.dataset.id;
   const newText = el.textContent;
   const original = el.dataset.original.replace(/&quot;/g, '"');
-  // Si le texte n'a pas changé, on ne fait rien (évite un appel API inutile)
   if (newText.trim() === original.trim()) return;
   editTask(id, newText);
 }
+
+// ==========================================
+//  📊 MODALS INFO (Dashboard / Support / Contact / À propos)
+// ==========================================
+
+const CONTACT_EMAIL = "nexora.app@proton.me";
+const CREATOR_NAME = "Nicolas";
+const APP_VERSION = "0.2";
+
+function showInfoModal(type) {
+  // Ferme le menu déroulant
+  const menu = document.getElementById("more-dropdown");
+  menu.classList.remove("open");
+  menu.classList.add("closed");
+
+  const body = document.getElementById("info-modal-body");
+  body.innerHTML = renderInfoModalContent(type);
+
+  const modal = document.getElementById("info-modal");
+  modal.classList.remove("closed");
+  modal.classList.add("open");
+}
+
+function hideInfoModal() {
+  const modal = document.getElementById("info-modal");
+  modal.classList.remove("open");
+  modal.classList.add("closed");
+}
+
+function renderInfoModalContent(type) {
+  if (type === "dashboard") return renderDashboard();
+  if (type === "support") return renderSupport();
+  if (type === "contact") return renderContact();
+  if (type === "about") return renderAbout();
+  return "";
+}
+
+// 📊 DASHBOARD
+function renderDashboard() {
+  const total = tasks.length;
+  const done = tasks.filter(t => t.done).length;
+  const active = total - done;
+  const completion = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  // Tâches actives par priorité
+  const urgentCount = tasks.filter(t => !t.done && t.priority === "urgent").length;
+  const mediumCount = tasks.filter(t => !t.done && t.priority === "medium").length;
+  const normalCount = tasks.filter(t => !t.done && t.priority === "normal").length;
+  const maxActive = Math.max(urgentCount, mediumCount, normalCount, 1);
+
+  if (total === 0) {
+    return `
+      <h2>📊 Dashboard</h2>
+      <p class="info-subtitle">Tes statistiques</p>
+      <div class="empty-state">
+        <div class="empty-state-emoji">📋</div>
+        Tu n'as pas encore de tâches.<br>Ajoute-en pour voir tes stats apparaître ici !
+      </div>
+    `;
+  }
+
+  return `
+    <h2>📊 Dashboard</h2>
+    <p class="info-subtitle">Tes statistiques en direct</p>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">${active}</div>
+        <div class="stat-label">En cours</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${done}</div>
+        <div class="stat-label">Terminées</div>
+      </div>
+      <div class="stat-card accent">
+        <div class="stat-value">${completion}%</div>
+        <div class="stat-label">Complétion</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${total}</div>
+        <div class="stat-label">Total</div>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <h3>Répartition des tâches en cours</h3>
+      ${active === 0 ? `
+        <p style="opacity:0.6;font-size:13px;">Aucune tâche en cours 🎉</p>
+      ` : `
+        <div class="priority-bars">
+          <div class="priority-bar-row">
+            <div class="priority-bar-label"><span class="priority-dot urgent"></span>Urgent</div>
+            <div class="priority-bar-track"><div class="priority-bar-fill urgent" style="width:${(urgentCount/maxActive)*100}%"></div></div>
+            <div class="priority-bar-count">${urgentCount}</div>
+          </div>
+          <div class="priority-bar-row">
+            <div class="priority-bar-label"><span class="priority-dot medium"></span>Medium</div>
+            <div class="priority-bar-track"><div class="priority-bar-fill medium" style="width:${(mediumCount/maxActive)*100}%"></div></div>
+            <div class="priority-bar-count">${mediumCount}</div>
+          </div>
+          <div class="priority-bar-row">
+            <div class="priority-bar-label"><span class="priority-dot normal"></span>Normal</div>
+            <div class="priority-bar-track"><div class="priority-bar-fill normal" style="width:${(normalCount/maxActive)*100}%"></div></div>
+            <div class="priority-bar-count">${normalCount}</div>
+          </div>
+        </div>
+      `}
+    </div>
+  `;
+}
+
+// 💬 SUPPORT
+function renderSupport() {
+  return `
+    <h2>💬 Support</h2>
+    <p class="info-subtitle">Tout ce qu'il faut savoir pour bien utiliser Nexora</p>
+
+    <div class="info-section">
+      <h3>Ajouter des tâches</h3>
+      <p>Pour ajouter <b>plusieurs tâches d'un coup</b>, sépare-les avec <kbd>+</kbd>, <kbd>,</kbd> ou <kbd>/</kbd>.</p>
+      <p style="opacity:0.7;font-size:13px;">Exemple : <i>maths examen demain + devoir français + réviser bio</i></p>
+    </div>
+
+    <div class="info-section">
+      <h3>Détection automatique</h3>
+      <p>Nexora analyse le texte pour deviner la priorité et le temps estimé. Quelques mots-clés reconnus :</p>
+      <ul>
+        <li><b>Urgent</b> : examen, contrôle, oral, demain, urgent…</li>
+        <li><b>Medium</b> : DM, devoir, projet, révision, lundi…</li>
+        <li><b>Normal</b> : tout le reste</li>
+      </ul>
+    </div>
+
+    <div class="info-section">
+      <h3>Modifier une tâche</h3>
+      <p>Clique sur le <b>texte</b> d'une tâche pour le modifier directement.</p>
+      <ul>
+        <li><kbd>Entrée</kbd> pour valider</li>
+        <li><kbd>Échap</kbd> pour annuler</li>
+      </ul>
+    </div>
+
+    <div class="info-section">
+      <h3>Supprimer / archiver</h3>
+      <p>Coche une tâche pour la passer en <i>terminées</i>. Utilise le bouton <b>🗑️ Vider</b> pour tout nettoyer d'un coup.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>Besoin d'aide ?</h3>
+      <p>Un bug, une suggestion ? Passe par la page <b>Contact</b> du menu pour nous écrire 📩</p>
+    </div>
+  `;
+}
+
+// 📩 CONTACT
+function renderContact() {
+  const subject = encodeURIComponent("Contact Nexora");
+  const body = encodeURIComponent("Bonjour,\n\n");
+  return `
+    <h2>📩 Contact</h2>
+    <p class="info-subtitle">Une question, un bug, une suggestion ? On est à l'écoute.</p>
+
+    <div class="contact-card">
+      <div style="font-size:13px;opacity:0.7;margin-bottom:6px;">Notre adresse email</div>
+      <div class="contact-email">${CONTACT_EMAIL}</div>
+    </div>
+
+    <a class="btn-mailto" href="mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}">✉️ Envoyer un email</a>
+
+    <div class="info-section" style="margin-top:20px;">
+      <p style="font-size:13px;opacity:0.6;text-align:center;">
+        On répond généralement sous 48h.<br>
+        Tu peux aussi simplement copier l'adresse ci-dessus.
+      </p>
+    </div>
+  `;
+}
+
+// ℹ️ À PROPOS
+function renderAbout() {
+  const year = new Date().getFullYear();
+  return `
+    <h2>ℹ️ À propos</h2>
+    <p class="info-subtitle">L'app de gestion de tâches pour les étudiants</p>
+
+    <div class="info-section">
+      <p class="about-tagline">
+        <b>Nexora</b> est née d'un constat simple : les étudiants jonglent avec
+        des dizaines de devoirs, contrôles et révisions chaque semaine —
+        et la plupart des outils existants sont trop compliqués ou pas pensés pour eux.
+      </p>
+      <p class="about-tagline">
+        L'idée : une app <b>rapide, gratuite et sans prise de tête</b>. Tu écris ce que tu as à faire,
+        Nexora s'occupe de prioriser. Tu coches quand c'est fini. C'est tout.
+      </p>
+    </div>
+
+    <div class="info-section">
+      <h3>Créateur</h3>
+      <p>Imaginé et développé par <b>${CREATOR_NAME}</b>, étudiant et passionné de productivité.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>Vie privée</h3>
+      <p>Tes tâches t'appartiennent. Elles sont stockées de façon sécurisée et personne d'autre que toi ne peut y accéder.</p>
+    </div>
+
+    <div class="about-meta">
+      <span>Version ${APP_VERSION}</span>
+      <span>© ${year} Nexora</span>
+      <span>Fait avec ❤️</span>
+    </div>
+  `;
+}
+
+// ==========================================
+//  RACCOURCIS CLAVIER GLOBAUX
+// ==========================================
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    const authModal = document.getElementById("auth-modal");
+    if (authModal.classList.contains("open")) {
+      submitAuth();
+    }
+  }
+  if (e.key === "Escape") {
+    const authModal = document.getElementById("auth-modal");
+    if (authModal.classList.contains("open")) hideAuthModal();
+    const infoModal = document.getElementById("info-modal");
+    if (infoModal.classList.contains("open")) hideInfoModal();
+  }
+});
+
+// Ferme le menu déroulant si on clique ailleurs
+document.addEventListener("click", (e) => {
+  const menu = document.getElementById("more-dropdown");
+  const moreBtn = document.querySelector(".more-btn");
+  if (menu && menu.classList.contains("open") && !menu.contains(e.target) && e.target !== moreBtn) {
+    menu.classList.remove("open");
+    menu.classList.add("closed");
+  }
+});
+
 // ==========================================
 //  GO
 // ==========================================
