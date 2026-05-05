@@ -304,6 +304,31 @@ window.deleteTask = async function(id) {
   console.log("DELETED =", id);
   await loadTasks();
 };
+window.editTask = async function(id, newText) {
+  if (!id) return;
+  newText = newText.trim();
+  if (!newText) {
+    // Si l'utilisateur a vidé le champ, on annule (on recharge sans modifier)
+    await loadTasks();
+    return;
+  }
+  // On recalcule la priorité et le temps en fonction du nouveau texte
+  const { data, error } = await db
+    .from("tasks")
+    .update({
+      text: newText,
+      priority: getPriority(newText),
+      time: getTime(newText)
+    })
+    .eq("id", id)
+    .select();
+  if (error) {
+    console.error("EDIT ERROR =", error);
+    return;
+  }
+  console.log("EDITED TASK =", data);
+  await loadTasks();
+};
 
 // ==========================================
 //  RENDU & UI TÂCHES
@@ -318,9 +343,20 @@ function render() {
       <div class="done-header" onclick="toggleActiveSection()">Tâches en cours (${active.length})</div>
       <div id="active-list" class="open">`;
   active.forEach((t) => {
+    // On échappe les guillemets dans le texte pour éviter de casser le HTML
+    const safeText = t.text.replace(/"/g, "&quot;");
     html += `<div class="task ${t.priority}" id="task-${t.id}">
       <button class="check-btn" onclick="toggleTask(${t.id}, ${t.done})"></button>
-      <div><b>${t.text}</b><br>priorité : ${t.priority}<br>temps : ${t.time}</div>
+      <div class="task-content">
+        <b class="task-text"
+           contenteditable="true"
+           spellcheck="false"
+           data-id="${t.id}"
+           data-original="${safeText}"
+           onkeydown="handleEditKey(event, this)"
+           onblur="finishEdit(this)">${t.text}</b>
+        <br>priorité : ${t.priority}<br>temps : ${t.time}
+      </div>
     </div>`;
   });
   html += `</div></div>
@@ -393,6 +429,37 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+// ==========================================
+//  ÉDITION INLINE D'UNE TÂCHE
+// ==========================================
+
+function handleEditKey(event, el) {
+  if (event.key === "Enter") {
+    event.preventDefault(); // empêche le retour à la ligne
+    el.blur(); // déclenche finishEdit
+  }
+  if (event.key === "Escape") {
+    event.preventDefault();
+    // On restaure le texte original et on quitte l'édition
+    el.textContent = el.dataset.original;
+    el.dataset.cancelled = "true";
+    el.blur();
+  }
+}
+
+function finishEdit(el) {
+  // Si l'édition a été annulée par Échap, on ne sauvegarde pas
+  if (el.dataset.cancelled === "true") {
+    delete el.dataset.cancelled;
+    return;
+  }
+  const id = el.dataset.id;
+  const newText = el.textContent;
+  const original = el.dataset.original.replace(/&quot;/g, '"');
+  // Si le texte n'a pas changé, on ne fait rien (évite un appel API inutile)
+  if (newText.trim() === original.trim()) return;
+  editTask(id, newText);
+}
 // ==========================================
 //  GO
 // ==========================================
