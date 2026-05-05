@@ -4,9 +4,10 @@
 const SUPABASE_URL = "https://dmjctzpgondlavluwury.supabase.co";
 const SUPABASE_KEY = "sb_publishable_I4_a8MSGS0cFFRD_p2DMdg_pPm3W3Cr";
 
-// On utilise maintenant le client officiel Supabase (chargé via le CDN dans index.html)
-// Il gère automatiquement la session, le token, le refresh, etc.
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// On utilise le client officiel Supabase chargé via le CDN.
+// ⚠️ On nomme notre client "db" et pas "supabase" pour éviter
+// un conflit avec la variable globale "supabase" créée par le CDN.
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ==========================================
 //  ÉTAT GLOBAL
@@ -22,13 +23,11 @@ console.log("JS CHARGE OK");
 //  AUTH — INIT & GESTION DE LA SESSION
 // ==========================================
 
-// Au chargement de la page, on vérifie si l'utilisateur est déjà connecté
 async function initAuth() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await db.auth.getSession();
   handleAuthChange(session);
 
-  // Écoute les changements de session (login, logout, refresh token...)
-  supabase.auth.onAuthStateChange((_event, session) => {
+  db.auth.onAuthStateChange((_event, session) => {
     handleAuthChange(session);
   });
 }
@@ -128,20 +127,18 @@ async function submitAuth() {
 
   try {
     if (authMode === "signup") {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await db.auth.signUp({ email, password });
       if (error) throw error;
       console.log("SIGNUP OK =", data);
-      // Avec confirmation email désactivée, l'utilisateur est déjà connecté
       hideAuthModal();
     } else {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
       if (error) throw error;
       console.log("LOGIN OK =", data);
       hideAuthModal();
     }
   } catch (err) {
     console.error("AUTH ERROR =", err);
-    // Traduction des erreurs courantes en français
     let msg = err.message || "Une erreur est survenue.";
     if (msg.includes("Invalid login credentials")) msg = "Email ou mot de passe incorrect.";
     if (msg.includes("User already registered")) msg = "Un compte existe déjà avec cet email.";
@@ -151,9 +148,8 @@ async function submitAuth() {
 }
 
 async function logout() {
-  await supabase.auth.signOut();
+  await db.auth.signOut();
   console.log("LOGOUT OK");
-  // handleAuthChange est appelé automatiquement via onAuthStateChange
 }
 
 // ==========================================
@@ -166,16 +162,15 @@ async function addTask() {
   if (!input) return;
   let list = input.split(/[+,/]/).map(t => t.trim()).filter(Boolean);
 
-  // On prépare toutes les tâches en une seule insertion (plus rapide)
   const newTasks = list.map(t => ({
     text: t,
     priority: getPriority(t),
     time: getTime(t),
     done: false,
-    user_id: currentUser.id  // 👈 obligatoire avec le RLS
+    user_id: currentUser.id
   }));
 
-  const { data, error } = await supabase.from("tasks").insert(newTasks).select();
+  const { data, error } = await db.from("tasks").insert(newTasks).select();
   if (error) {
     console.error("INSERT ERROR =", error);
     return;
@@ -191,8 +186,7 @@ async function loadTasks() {
     render();
     return;
   }
-  // Pas besoin de filtrer par user_id ici : le RLS le fait pour nous
-  const { data, error } = await supabase.from("tasks").select("*");
+  const { data, error } = await db.from("tasks").select("*");
   if (error) {
     console.error("LOAD ERROR =", error);
     tasks = [];
@@ -205,7 +199,7 @@ async function loadTasks() {
 
 window.toggleTask = async function(id, currentDone) {
   if (!id) return;
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("tasks")
     .update({ done: !currentDone })
     .eq("id", id)
@@ -220,7 +214,7 @@ window.toggleTask = async function(id, currentDone) {
 
 window.deleteTask = async function(id) {
   if (!id) return;
-  const { error } = await supabase.from("tasks").delete().eq("id", id);
+  const { error } = await db.from("tasks").delete().eq("id", id);
   if (error) {
     console.error("DELETE ERROR =", error);
     return;
@@ -300,7 +294,7 @@ function getTime(text) {
 }
 
 // ==========================================
-//  BONUS — Soumettre l'auth avec Entrée
+//  BONUS — Soumettre l'auth avec Entrée / fermer avec Échap
 // ==========================================
 document.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
