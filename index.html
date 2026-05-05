@@ -18,9 +18,17 @@
         </svg>
         <span>Nexora</span>
       </div>
-      <div class="auth-buttons">
-        <button class="auth-btn">Se connecter</button>
-        <button class="auth-btn primary">S'inscrire</button>
+
+      <!-- Boutons quand DÉCONNECTÉ -->
+      <div class="auth-buttons" id="auth-buttons-logged-out">
+        <button class="auth-btn" onclick="showAuthModal('login')">Se connecter</button>
+        <button class="auth-btn primary" onclick="showAuthModal('signup')">S'inscrire</button>
+      </div>
+
+      <!-- Boutons quand CONNECTÉ -->
+      <div class="auth-buttons" id="auth-buttons-logged-in" style="display:none;">
+        <span id="user-email" class="user-email"></span>
+        <button class="auth-btn" onclick="logout()">Se déconnecter</button>
         <div class="more-menu">
           <button class="more-btn" onclick="toggleMoreMenu()">⋯</button>
           <div id="more-dropdown" class="more-dropdown closed">
@@ -34,7 +42,8 @@
     </div>
   </div>
 
-  <div class="app">
+  <!-- Vue APP (visible si connecté) -->
+  <div class="app" id="app-view" style="display:none;">
     <div class="hero">
       <h1>Organise ta journée simplement</h1>
       <p class="subtitle">
@@ -47,6 +56,38 @@
       <button class="btn primary" onclick="addTask()">➕ Ajouter tâches</button>
     </div>
     <div id="output"></div>
+  </div>
+
+  <!-- Vue ACCUEIL (visible si déconnecté) -->
+  <div class="app" id="landing-view">
+    <div class="hero">
+      <h1>Organise ta journée simplement</h1>
+      <p class="subtitle">
+        Nexora t'aide à structurer tes tâches,<br>
+        rester concentré et avancer chaque jour.<br><br>
+        Connecte-toi ou crée un compte pour commencer.
+      </p>
+    </div>
+    <div class="top-actions">
+      <button class="btn primary" onclick="showAuthModal('signup')">S'inscrire gratuitement</button>
+      <button class="btn secondary" onclick="showAuthModal('login')">Se connecter</button>
+    </div>
+  </div>
+
+  <!-- Modal d'authentification -->
+  <div id="auth-modal" class="auth-modal closed">
+    <div class="auth-modal-content">
+      <button class="auth-close" onclick="hideAuthModal()">✕</button>
+      <h2 id="auth-title">Se connecter</h2>
+      <input type="email" id="auth-email" placeholder="Email" autocomplete="email">
+      <input type="password" id="auth-password" placeholder="Mot de passe (min. 6 caractères)" autocomplete="current-password">
+      <div id="auth-error" class="auth-error"></div>
+      <button class="btn primary" id="auth-submit" onclick="submitAuth()">Se connecter</button>
+      <p class="auth-switch">
+        <span id="auth-switch-text">Pas encore de compte ?</span>
+        <a href="#" onclick="switchAuthMode(); return false;" id="auth-switch-link">S'inscrire</a>
+      </p>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
