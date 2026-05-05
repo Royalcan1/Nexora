@@ -129,3 +129,8 @@ button { border: none; cursor: pointer; }
 .about-meta { display: flex; gap: 16px; font-size: 12px; opacity: 0.5; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 16px; }
 .about-meta span:before { content: "•"; margin-right: 6px; opacity: 0.5; }
 .about-meta span:first-child:before { content: ""; margin-right: 0; }
+/* 🎉 TOAST DE FIN DE TÂCHES */
+.completion-toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(20px); background: linear-gradient(135deg, #1f2937, #111827); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 16px 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(59,130,246,0.15); min-width: 240px; max-width: 90%; text-align: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 2000; }
+.completion-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.completion-toast-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px; letter-spacing: -0.3px; }
+.completion-toast-subtitle { font-size: 13px; opacity: 0.7; }
