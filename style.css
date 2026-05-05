@@ -22,7 +22,7 @@ button { border: none; cursor: pointer; }
 .task.done { opacity: 0.6; }
 .trash-btn { margin-left: auto; background: transparent; border: none; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #ef4444; transition: all 0.2s ease; font-size: 16px; }
 .trash-btn:hover { background: rgba(239,68,68,0.12); transform: scale(1.1); color: #dc2626; }
-.done-header { margin-top: 20px; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 10px; cursor: pointer; text-align: center; }
+.done-header { margin-top: 20px; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 10px; cursor: pointer; text-align: center; display: flex; justify-content: center; align-items: center; gap: 12px; }
 #active-list, #done-list { display: block; overflow: hidden; transition: all 0.35s ease; }
 .done-section { margin-top: 18px; }
 .top-header { position: fixed; top: 15px; left: 0; width: 100%; display: flex; justify-content: center; z-index: 10; }
@@ -48,16 +48,16 @@ button { border: none; cursor: pointer; }
 .task.medium { border-left: 4px solid #f59e0b; }
 .task.normal { border-left: 4px solid #22c55e; }
 
-/* 🔐 MODAL D'AUTH */
+/* 🔐 MODAL D'AUTH (et autres modals) */
 .auth-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1000; transition: opacity 0.25s ease; }
 .auth-modal.closed { opacity: 0; pointer-events: none; }
 .auth-modal.open { opacity: 1; pointer-events: auto; }
-.auth-modal-content { background: #111827; border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; padding: 32px 28px; width: 90%; max-width: 380px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.auth-modal-content { background: #111827; border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; padding: 32px 28px; width: 90%; max-width: 380px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5); max-height: 85vh; overflow-y: auto; }
 .auth-modal-content h2 { margin-top: 0; margin-bottom: 20px; }
 .auth-modal-content input { width: 100%; box-sizing: border-box; padding: 12px 14px; margin-bottom: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; font-size: 14px; outline: none; transition: all 0.2s ease; }
 .auth-modal-content input:focus { border-color: rgba(59,130,246,0.6); background: rgba(255,255,255,0.07); }
 .auth-modal-content .btn { width: 100%; margin-top: 8px; }
-.auth-close { position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.05); color: #e5e7eb; font-size: 14px; cursor: pointer; transition: all 0.2s ease; }
+.auth-close { position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.05); color: #e5e7eb; font-size: 14px; cursor: pointer; transition: all 0.2s ease; z-index: 5; }
 .auth-close:hover { background: rgba(255,255,255,0.1); }
 .auth-error { color: #ef4444; font-size: 13px; min-height: 18px; margin-bottom: 8px; text-align: center; }
 .auth-switch { text-align: center; font-size: 13px; opacity: 0.8; margin-top: 16px; margin-bottom: 0; }
@@ -66,11 +66,66 @@ button { border: none; cursor: pointer; }
 .auth-forgot { display: block; text-align: center; font-size: 12px; color: #93c5fd; text-decoration: none; margin-top: -4px; margin-bottom: 12px; transition: color 0.2s ease; }
 .auth-forgot:hover { color: #3b82f6; text-decoration: underline; }
 .auth-info { text-align: center; font-size: 13px; opacity: 0.8; margin-top: -8px; margin-bottom: 18px; }
+
+/* ✏️ ÉDITION INLINE */
 .task-text { cursor: text; outline: none; padding: 2px 4px; margin: -2px -4px; border-radius: 4px; transition: background 0.15s ease; }
 .task-text:hover { background: rgba(255,255,255,0.04); }
 .task-text:focus { background: rgba(59,130,246,0.15); cursor: text; }
 .task-content { flex: 1; }
-.done-header { display: flex; justify-content: center; align-items: center; gap: 12px; }
+
+/* 🗑️ BOUTON VIDER */
 .clear-btn { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; font-size: 12px; padding: 4px 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-weight: 600; }
 .clear-btn:hover { background: rgba(239,68,68,0.2); transform: translateY(-1px); }
 .clear-btn:active { transform: scale(0.95); }
+
+/* 📊 MODALS INFO (Dashboard / Support / Contact / À propos) */
+.info-modal-content { max-width: 460px; }
+.info-modal-content h2 { margin-bottom: 6px; text-align: left; font-size: 22px; }
+.info-modal-content .info-subtitle { opacity: 0.6; font-size: 13px; margin-bottom: 20px; }
+
+/* Sections génériques dans modals */
+.info-section { margin-bottom: 20px; }
+.info-section:last-child { margin-bottom: 0; }
+.info-section h3 { font-size: 14px; font-weight: 600; margin: 0 0 10px 0; opacity: 0.9; letter-spacing: 0.3px; text-transform: uppercase; font-size: 11px; opacity: 0.5; }
+.info-section p { margin: 0 0 8px 0; font-size: 14px; line-height: 1.5; opacity: 0.85; }
+.info-section ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.7; opacity: 0.85; }
+.info-section ul li { margin-bottom: 4px; }
+.info-section kbd { display: inline-block; padding: 2px 7px; font-size: 11px; font-family: ui-monospace, "SF Mono", Monaco, monospace; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 5px; box-shadow: 0 1px 0 rgba(255,255,255,0.05); margin: 0 2px; }
+
+/* 📊 Dashboard - stats */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.stat-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; }
+.stat-value { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; color: #fff; }
+.stat-label { font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+.stat-card.accent .stat-value { background: linear-gradient(135deg, #3b82f6, #60a5fa); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+/* Barres de répartition par priorité */
+.priority-bars { display: flex; flex-direction: column; gap: 10px; }
+.priority-bar-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.priority-bar-label { width: 70px; opacity: 0.85; display: flex; align-items: center; gap: 6px; }
+.priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.priority-dot.urgent { background: #ef4444; }
+.priority-dot.medium { background: #f59e0b; }
+.priority-dot.normal { background: #22c55e; }
+.priority-bar-track { flex: 1; height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+.priority-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+.priority-bar-fill.urgent { background: #ef4444; }
+.priority-bar-fill.medium { background: #f59e0b; }
+.priority-bar-fill.normal { background: #22c55e; }
+.priority-bar-count { width: 28px; text-align: right; font-weight: 600; opacity: 0.8; }
+
+/* Dashboard - état vide */
+.empty-state { text-align: center; padding: 30px 0 10px; opacity: 0.6; font-size: 14px; line-height: 1.6; }
+.empty-state-emoji { font-size: 36px; margin-bottom: 8px; }
+
+/* 📩 Contact - bouton mailto */
+.contact-card { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.contact-email { font-family: ui-monospace, "SF Mono", Monaco, monospace; font-size: 14px; color: #60a5fa; word-break: break-all; }
+.btn-mailto { display: block; width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; text-align: center; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s ease; box-shadow: 0 10px 25px rgba(37,99,235,0.3); margin-top: 8px; }
+.btn-mailto:hover { transform: translateY(-2px); }
+
+/* ℹ️ À propos */
+.about-tagline { font-size: 14px; line-height: 1.6; opacity: 0.85; margin-bottom: 16px; }
+.about-meta { display: flex; gap: 16px; font-size: 12px; opacity: 0.5; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 16px; }
+.about-meta span:before { content: "•"; margin-right: 6px; opacity: 0.5; }
+.about-meta span:first-child:before { content: ""; margin-right: 0; }
