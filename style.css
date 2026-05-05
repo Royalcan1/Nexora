@@ -70,3 +70,7 @@ button { border: none; cursor: pointer; }
 .task-text:hover { background: rgba(255,255,255,0.04); }
 .task-text:focus { background: rgba(59,130,246,0.15); cursor: text; }
 .task-content { flex: 1; }
+.done-header { display: flex; justify-content: center; align-items: center; gap: 12px; }
+.clear-btn { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; font-size: 12px; padding: 4px 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-weight: 600; }
+.clear-btn:hover { background: rgba(239,68,68,0.2); transform: translateY(-1px); }
+.clear-btn:active { transform: scale(0.95); }
