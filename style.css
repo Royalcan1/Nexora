@@ -491,3 +491,41 @@ body { padding-bottom: 100px !important; }
   background: linear-gradient(135deg, rgba(59,130,246,0.25), rgba(37,99,235,0.25));
   color: #bfdbfe;
 }
+/* 📲 INSTRUCTIONS D'INSTALLATION iOS */
+.install-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+.install-step-num {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.install-step-text {
+  font-size: 14px;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+.ios-share-icon {
+  display: inline-block;
+  padding: 1px 7px;
+  background: rgba(59,130,246,0.15);
+  border: 1px solid rgba(59,130,246,0.3);
+  border-radius: 6px;
+  color: #93c5fd;
+  font-size: 13px;
+  margin: 0 2px;
+}
