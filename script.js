@@ -794,6 +794,7 @@ function renderInfoModalContent(type) {
   if (type === "support") return renderSupport();
   if (type === "contact") return renderContact();
   if (type === "about") return renderAbout();
+  if (type === "install-ios") return renderInstallIOS();
   return "";
 }
 
@@ -969,6 +970,33 @@ function renderAbout() {
     </div>
   `;
 }
+function renderInstallIOS() {
+  return `
+    <h2>📲 Installer Nexora</h2>
+    <p class="info-subtitle">Sur iPhone / iPad, en 3 étapes</p>
+
+    <div class="install-step">
+      <div class="install-step-num">1</div>
+      <div class="install-step-text">Appuie sur le bouton <b>Partager</b> 
+        <span class="ios-share-icon">⎙</span> en bas de Safari</div>
+    </div>
+    <div class="install-step">
+      <div class="install-step-num">2</div>
+      <div class="install-step-text">Fais défiler et appuie sur <b>"Sur l'écran d'accueil"</b></div>
+    </div>
+    <div class="install-step">
+      <div class="install-step-num">3</div>
+      <div class="install-step-text">Appuie sur <b>Ajouter</b> en haut à droite</div>
+    </div>
+
+    <div class="info-section" style="margin-top:20px;">
+      <p style="font-size:13px;opacity:0.6;text-align:center;">
+        L'icône Nexora apparaîtra avec tes autres apps.<br>
+        Tu pourras la lancer comme une vraie app native ! ✨
+      </p>
+    </div>
+  `;
+}
 
 // ==========================================
 //  RACCOURCIS CLAVIER GLOBAUX
@@ -1135,6 +1163,19 @@ function renderAvatar() {
 //  📲 PWA : Service Worker + Install Prompt
 // ==========================================
 
+// Détection
+function isStandalonePWA() {
+  return window.matchMedia("(display-mode: standalone)").matches
+    || window.navigator.standalone === true;
+}
+
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1 && !window.MSStream);
+}
+
+let deferredInstallPrompt = null;
+
 // Enregistrement du service worker
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -1144,36 +1185,63 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-// Capture de l'événement d'installation pour notre bouton custom
-let deferredInstallPrompt = null;
-
+// Capture du prompt natif (Chrome / Android / Edge)
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
-  const btn = document.getElementById("install-menu-item");
-  if (btn) btn.style.display = "block";
+  refreshInstallButtonVisibility();
 });
 
+// Décide si on affiche le bouton "Installer l'app"
+function refreshInstallButtonVisibility() {
+  const btn = document.getElementById("install-menu-item");
+  if (!btn) return;
+
+  // Déjà installée → on cache
+  if (isStandalonePWA()) { btn.style.display = "none"; return; }
+
+  // iOS → on affiche (instructions custom)
+  if (isIOS()) { btn.style.display = "block"; return; }
+
+  // Autres : visible uniquement si le prompt natif est dispo
+  btn.style.display = deferredInstallPrompt ? "block" : "none";
+}
+
+// Click sur "Installer l'app"
 window.installApp = async function() {
-  if (!deferredInstallPrompt) {
-    // Fallback : explique comment faire manuellement (iOS Safari notamment)
-    alert("Pour installer Nexora :\n\n• iOS : appuie sur Partager puis 'Sur l'écran d'accueil'\n• Android/Chrome : ouvre le menu et choisis 'Installer l'application'");
+  // Ferme le menu ⋯
+  const menu = document.getElementById("more-dropdown");
+  if (menu) { menu.classList.remove("open"); menu.classList.add("closed"); }
+
+  // iOS → modal d'instructions custom
+  if (isIOS()) {
+    showInfoModal("install-ios");
     return;
   }
-  deferredInstallPrompt.prompt();
-  const { outcome } = await deferredInstallPrompt.userChoice;
-  console.log("Install outcome:", outcome);
-  deferredInstallPrompt = null;
-  const btn = document.getElementById("install-menu-item");
-  if (btn) btn.style.display = "none";
+
+  // Prompt natif disponible
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    console.log("Install outcome:", outcome);
+    deferredInstallPrompt = null;
+    refreshInstallButtonVisibility();
+    return;
+  }
+
+  // Fallback (rare)
+  showInfoModal("install-ios");
 };
 
-// Cache l'option d'installation si l'app est déjà installée
+// Quand l'app est installée → on cache le bouton
 window.addEventListener("appinstalled", () => {
-  const btn = document.getElementById("install-menu-item");
-  if (btn) btn.style.display = "none";
+  deferredInstallPrompt = null;
+  refreshInstallButtonVisibility();
   console.log("Nexora installé !");
 });
+
+// Vérification initiale dès le chargement
+document.addEventListener("DOMContentLoaded", refreshInstallButtonVisibility);
 
 // ==========================================
 //  GO
