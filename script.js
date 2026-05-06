@@ -340,7 +340,14 @@ window.clearDoneTasks = async function(event) {
   const doneTasks = tasks.filter(t => t.done);
   if (doneTasks.length === 0) return;
 
-  const confirmed = confirm(`Supprimer les ${doneTasks.length} tâche(s) terminée(s) ?`);
+  const n = doneTasks.length;
+  const confirmed = await showConfirm({
+    icon: "🗑️",
+    title: "Vider les tâches terminées",
+    message: `Tu vas supprimer définitivement ${n} tâche${n > 1 ? "s" : ""} terminée${n > 1 ? "s" : ""}. Cette action est irréversible.`,
+    confirmText: "Supprimer",
+    danger: true
+  });
   if (!confirmed) return;
 
   const ids = doneTasks.map(t => t.id);
@@ -534,6 +541,46 @@ function getDueDate(text) {
   }
 
   return null;
+}
+
+// ==========================================
+//  ⚠️ MODAL DE CONFIRMATION GÉNÉRIQUE
+// ==========================================
+
+let confirmResolve = null;
+
+function showConfirm(options = {}) {
+  return new Promise((resolve) => {
+    confirmResolve = resolve;
+    document.getElementById("confirm-icon").textContent = options.icon || "⚠️";
+    document.getElementById("confirm-title").textContent = options.title || "Confirmation";
+    document.getElementById("confirm-message").textContent = options.message || "Es-tu sûr ?";
+
+    const btn = document.getElementById("confirm-ok-btn");
+    btn.textContent = options.confirmText || "Confirmer";
+    btn.classList.remove("primary", "danger");
+    btn.classList.add(options.danger ? "danger" : "primary");
+
+    const modal = document.getElementById("confirm-modal");
+    modal.classList.remove("closed");
+    modal.classList.add("open");
+  });
+}
+
+function hideConfirm() {
+  const modal = document.getElementById("confirm-modal");
+  modal.classList.remove("open");
+  modal.classList.add("closed");
+}
+
+function confirmOk() {
+  hideConfirm();
+  if (confirmResolve) { confirmResolve(true); confirmResolve = null; }
+}
+
+function confirmCancel() {
+  hideConfirm();
+  if (confirmResolve) { confirmResolve(false); confirmResolve = null; }
 }
 
 // ==========================================
@@ -930,15 +977,17 @@ function renderAbout() {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     const authModal = document.getElementById("auth-modal");
-    if (authModal.classList.contains("open")) {
-      submitAuth();
-    }
+    if (authModal.classList.contains("open")) submitAuth();
+    const confirmModal = document.getElementById("confirm-modal");
+    if (confirmModal && confirmModal.classList.contains("open")) confirmOk();
   }
   if (e.key === "Escape") {
     const authModal = document.getElementById("auth-modal");
     if (authModal.classList.contains("open")) hideAuthModal();
     const infoModal = document.getElementById("info-modal");
     if (infoModal.classList.contains("open")) hideInfoModal();
+    const confirmModal = document.getElementById("confirm-modal");
+    if (confirmModal && confirmModal.classList.contains("open")) confirmCancel();
   }
 });
 
@@ -966,6 +1015,8 @@ document.addEventListener("click", (e) => {
 
   const resetModal = document.getElementById("reset-modal");
   if (e.target === resetModal) hideResetModal();
+  const confirmModal = document.getElementById("confirm-modal");
+if (e.target === confirmModal) confirmCancel();
 });
 
 // ==========================================
