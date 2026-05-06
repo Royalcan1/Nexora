@@ -42,8 +42,16 @@ button { border: none; cursor: pointer; }
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(255,255,255,0.06);
-  padding: 10px 0;}
-.header-inner { width: 100%; max-width: 720px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; }
+  padding: 10px 0;
+}
+.header-inner {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
 .logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; }
 .logo-icon { width: 30px; height: 30px; transition: transform 0.25s ease, filter 0.25s ease; }
 .logo:hover .logo-icon { transform: scale(1.1) rotate(6deg); filter: drop-shadow(0 0 8px rgba(59,130,246,0.5)); }
