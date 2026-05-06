@@ -55,17 +55,22 @@
 </div>
   <!-- Vue APP (visible si connecté) -->
   <div class="app" id="app-view" style="display:none;">
-    <div class="hero">
-      <h1>Organise ta journée simplement</h1>
-      <p class="subtitle">
-        Nexora t'aide à structurer tes tâches,<br>
-        rester concentré et avancer chaque jour.
-      </p>
-    </div>
+  <div class="hero">
+    <h1 id="greeting">Bonjour 👋</h1>
+    <p class="subtitle" id="date-line">Chargement...</p>
+    <div class="stats-pills" id="stats-pills"></div>
+  </div>
     <textarea id="input" placeholder="Ex: maths examen demain + devoir français + réviser bio"></textarea>
     <div class="top-actions">
       <button class="btn primary" onclick="addTask()">➕ Ajouter tâches</button>
     </div>
+    <div class="suggestion-chips" id="suggestion-chips">
+  <button class="chip" onclick="addSuggestion('Réviser ')">📚 Réviser</button>
+  <button class="chip" onclick="addSuggestion('DM ')">✍️ DM</button>
+  <button class="chip" onclick="addSuggestion('Lire chapitre ')">📖 Lire</button>
+  <button class="chip" onclick="addSuggestion('Préparer ')">🎯 Préparer</button>
+  <button class="chip" onclick="addSuggestion('Exposé ')">🎤 Exposé</button>
+</div>
     <div id="output"></div>
   </div>
 
@@ -124,7 +129,13 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <script src="script.js"></script>
-
+<footer class="app-footer" id="app-footer">
+  <span class="footer-version">Nexora · v0.2</span>
+  <a onclick="showInfoModal('support')">Support</a>
+  <a onclick="showInfoModal('contact')">Contact</a>
+  <a onclick="showInfoModal('about')">À propos</a>
+</footer>
+  
 </body>
 </html>
 
