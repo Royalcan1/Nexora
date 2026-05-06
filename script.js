@@ -846,6 +846,24 @@ document.addEventListener("click", (e) => {
     profileMenu.classList.remove("open");
     profileMenu.classList.add("closed");
   }
+
+  // 🆕 Fermeture des modals en cliquant sur le backdrop
+  const authModal = document.getElementById("auth-modal");
+  if (e.target === authModal) hideAuthModal();
+
+  const infoModal = document.getElementById("info-modal");
+  if (e.target === infoModal) hideInfoModal();
+
+  const resetModal = document.getElementById("reset-modal");
+  if (e.target === resetModal) hideResetModal();
+});
+
+  const profileMenu = document.getElementById("profile-dropdown");
+  const profileBtn = document.getElementById("profile-btn");
+  if (profileMenu && profileMenu.classList.contains("open") && !profileMenu.contains(e.target) && profileBtn && !profileBtn.contains(e.target)) {
+    profileMenu.classList.remove("open");
+    profileMenu.classList.add("closed");
+  }
 });
 
 // ==========================================
