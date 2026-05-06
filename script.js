@@ -366,10 +366,13 @@ function render() {
       <div class="done-header" onclick="toggleActiveSection()">Tâches en cours (${active.length})</div>
       <div id="active-list" class="open">`;
   active.forEach((t) => {
-    const safeText = t.text.replace(/"/g, "&quot;");
-    html += `<div class="task ${t.priority}" id="task-${t.id}">
-      <button class="check-btn" onclick="toggleTask(${t.id}, ${t.done})"></button>
-      <div class="task-content">
+  const safeText = t.text.replace(/"/g, "&quot;");
+  const due = getDueDate(t.text);
+  const dueBadge = due ? `<span class="due-badge ${due.urgency}">${due.label}</span>` : '';
+  html += `<div class="task ${t.priority}" id="task-${t.id}">
+    <button class="check-btn" onclick="toggleTask(${t.id}, ${t.done})"></button>
+    <div class="task-content">
+      <div class="task-header-row">
         <b class="task-text"
            contenteditable="true"
            spellcheck="false"
@@ -377,10 +380,12 @@ function render() {
            data-original="${safeText}"
            onkeydown="handleEditKey(event, this)"
            onblur="finishEdit(this)">${t.text}</b>
-        <br>priorité : ${t.priority}
+        ${dueBadge}
       </div>
-    </div>`;
-  });
+      <div class="task-meta">priorité : ${t.priority}</div>
+    </div>
+  </div>`;
+});
   html += `</div></div>
     <div class="done-section">
       <div class="done-header" onclick="toggleDoneSection()">
@@ -454,6 +459,55 @@ function getTime(text) {
   if (/\b(devoir|interro|interrogation|test|évaluation|evaluation)\b/.test(text)) return "1h";
   if (/\b(révision|revision|réviser|reviser|fiche|lecture|lire|exercice|exo|relire)\b/.test(text)) return "45 min";
   return "30 min";
+}
+function getDueDate(text) {
+  const lower = text.toLowerCase();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const build = (date, label) => {
+    const days = Math.round((date - today) / 86400000);
+    let urgency = 'later';
+    if (days <= 1) urgency = 'today';
+    else if (days <= 3) urgency = 'soon';
+    else if (days <= 7) urgency = 'week';
+    return { date, label, urgency };
+  };
+
+  if (/\b(aujourd'?hui|ce soir|ce midi|cette aprem|cet aprem|ce matin|maintenant|tout de suite|asap)\b/.test(lower)) {
+    return build(today, "Auj.");
+  }
+  if (/\bdemain\b/.test(lower)) {
+    const d = new Date(today); d.setDate(d.getDate() + 1);
+    return build(d, "Demain");
+  }
+  if (/\b(après[- ]?demain|apres[- ]?demain)\b/.test(lower)) {
+    const d = new Date(today); d.setDate(d.getDate() + 2);
+    return build(d, "+2j");
+  }
+
+  const months = { janvier:0, février:1, fevrier:1, mars:2, avril:3, mai:4, juin:5, juillet:6, août:7, aout:7, septembre:8, octobre:9, novembre:10, décembre:11, decembre:11 };
+  const dateMatch = lower.match(/\b(\d{1,2})\s+(janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)\b/);
+  if (dateMatch) {
+    const day = parseInt(dateMatch[1]);
+    const month = months[dateMatch[2]];
+    let d = new Date(today.getFullYear(), month, day);
+    if (d < today) d = new Date(today.getFullYear() + 1, month, day);
+    return build(d, `${day} ${dateMatch[2].slice(0, 3)}.`);
+  }
+
+  const dayNames = { dimanche:0, lundi:1, mardi:2, mercredi:3, jeudi:4, vendredi:5, samedi:6 };
+  const dayMatch = lower.match(/\b(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b/);
+  if (dayMatch) {
+    const target = dayNames[dayMatch[1]];
+    let diff = target - today.getDay();
+    if (diff <= 0) diff += 7;
+    const d = new Date(today); d.setDate(d.getDate() + diff);
+    const label = dayMatch[1].charAt(0).toUpperCase() + dayMatch[1].slice(1, 3) + '.';
+    return build(d, label);
+  }
+
+  return null;
 }
 
 // ==========================================
