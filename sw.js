@@ -3,7 +3,7 @@
 //  Stratégie : cache shell + network-first dynamique
 // ==========================================
 
-const CACHE_NAME = "nexora-v1";
+const CACHE_NAME = "nexora-v2";
 const SHELL = [
   "/",
   "/index.html",
@@ -12,6 +12,8 @@ const SHELL = [
   "/manifest.json",
   "/icon-192.png",
   "/icon-512.png",
+  "/icon-192-maskable.png",
+  "/icon-512-maskable.png",
   "/apple-touch-icon.png",
   "/favicon.png"
 ];
@@ -44,10 +46,10 @@ self.addEventListener("fetch", (event) => {
   // Ne PAS intercepter les requêtes Supabase (besoin de fraîcheur)
   if (url.hostname.includes("supabase.co")) return;
 
-  // Ne PAS intercepter les CDN externes (laisse le navigateur gérer)
+  // Ne PAS intercepter les CDN externes
   if (url.origin !== self.location.origin) return;
 
-  // Stratégie : cache-first pour le shell, sinon network-then-cache
+  // Stratégie : cache-first pour le shell, network-then-cache pour le reste
   event.respondWith(
     caches.match(req).then((cached) => {
       const networkFetch = fetch(req)
@@ -59,7 +61,6 @@ self.addEventListener("fetch", (event) => {
           return response;
         })
         .catch(() => {
-          // Offline et pas en cache → fallback sur l'index pour les pages
           if (req.destination === "document") {
             return caches.match("/index.html");
           }
