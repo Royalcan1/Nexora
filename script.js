@@ -50,14 +50,13 @@ function updateUI() {
   const loggedIn = document.getElementById("auth-buttons-logged-in");
   const appView = document.getElementById("app-view");
   const landingView = document.getElementById("landing-view");
-  const userEmail = document.getElementById("user-email");
 
   if (currentUser) {
     loggedOut.style.display = "none";
     loggedIn.style.display = "flex";
     appView.style.display = "block";
     landingView.style.display = "none";
-    userEmail.textContent = currentUser.email;
+    updateAvatarUI();
   } else {
     loggedOut.style.display = "flex";
     loggedIn.style.display = "none";
@@ -421,6 +420,9 @@ function toggleMoreMenu() {
   const menu = document.getElementById("more-dropdown");
   menu.classList.toggle("open");
   menu.classList.toggle("closed");
+  const profile = document.getElementById("profile-dropdown");
+  profile.classList.remove("open");
+  profile.classList.add("closed");
 }
 
 // ==========================================
@@ -630,6 +632,7 @@ function hideInfoModal() {
 }
 
 function renderInfoModalContent(type) {
+  if (type === "avatar") return renderAvatar();
   if (type === "dashboard") return renderDashboard();
   if (type === "support") return renderSupport();
   if (type === "contact") return renderContact();
@@ -830,13 +833,131 @@ document.addEventListener("keydown", (e) => {
 });
 
 document.addEventListener("click", (e) => {
-  const menu = document.getElementById("more-dropdown");
+  const moreMenu = document.getElementById("more-dropdown");
   const moreBtn = document.querySelector(".more-btn");
-  if (menu && menu.classList.contains("open") && !menu.contains(e.target) && e.target !== moreBtn) {
-    menu.classList.remove("open");
-    menu.classList.add("closed");
+  if (moreMenu && moreMenu.classList.contains("open") && !moreMenu.contains(e.target) && e.target !== moreBtn) {
+    moreMenu.classList.remove("open");
+    moreMenu.classList.add("closed");
+  }
+
+  const profileMenu = document.getElementById("profile-dropdown");
+  const profileBtn = document.getElementById("profile-btn");
+  if (profileMenu && profileMenu.classList.contains("open") && !profileMenu.contains(e.target) && profileBtn && !profileBtn.contains(e.target)) {
+    profileMenu.classList.remove("open");
+    profileMenu.classList.add("closed");
   }
 });
+
+// ==========================================
+//  🎭 AVATAR / PROFIL
+// ==========================================
+
+const AVATAR_CATEGORIES = {
+  "Smileys": ["😀","😎","🥰","😴","🤓","😇","🥳","🤩","😏","🙃","☺️","😋","🤔","😌","🥹","🤗","😈","🤡","🥸","🫠","😤","🥺","🤠","🫡"],
+  "Animaux": ["🐶","🐱","🦊","🐼","🐨","🦁","🐯","🐸","🐵","🦉","🦄","🐉","🦋","🐙","🐢","🦖","🐺","🐻","🐰","🦔","🐧","🦦","🦥","🐳"],
+  "Films": ["🎬","🍿","🎭","🎞️","📽️","🎥","⭐","🎟️","👻","🧛","🧟","💀","🦇","🕷️","🗡️","💣","🔫","🎩"],
+  "Jeux": ["🎮","🕹️","👾","🎲","♟️","🃏","🎯","🏆","⚔️","🛡️","🏹","🧙","🐲","💎","🗝️","⚗️","🪄","🧿"],
+  "Musique": ["🎵","🎶","🎸","🎹","🎷","🥁","🎻","🎤","🎧","📻","🎼","🎺","🪕","🪗","💿","📀"],
+  "Sport": ["⚽","🏀","🎾","🏈","⚾","🏐","🏓","🥋","🏊","🚴","🏃","🥊","⛷️","🏂","🥇","🛹","🏄","🤺"],
+  "Nature": ["🌸","🌹","🌻","🌵","🌴","🌲","🍀","🍄","🌈","☀️","🌙","⭐","⚡","🔥","🌊","❄️","🌺","🌷"],
+  "Food": ["🍕","🍔","🍟","🌮","🍣","🍰","🍪","🍩","🍦","🍓","🍎","🥑","🍉","🌶️","☕","🍵","🍫","🥨","🍜","🥟"],
+  "Geek": ["🤖","👨‍💻","💻","⌨️","🖱️","📱","⚙️","🚀","🛸","🛰️","💡","🔭","🧪","🧬","⚛️","🦾"]
+};
+
+let currentAvatarTab = "Smileys";
+
+function getCurrentAvatar() {
+  return currentUser?.user_metadata?.avatar || null;
+}
+
+function getAvatarFallback() {
+  return (currentUser?.email || "?").charAt(0).toUpperCase();
+}
+
+function updateAvatarUI() {
+  const el = document.getElementById("profile-avatar");
+  const emailEl = document.getElementById("profile-email");
+  if (!el) return;
+  const avatar = getCurrentAvatar();
+  if (avatar) {
+    el.textContent = avatar;
+    el.style.fontSize = "20px";
+  } else {
+    el.textContent = getAvatarFallback();
+    el.style.fontSize = "16px";
+  }
+  if (emailEl && currentUser) emailEl.textContent = currentUser.email;
+}
+
+function toggleProfileMenu() {
+  const menu = document.getElementById("profile-dropdown");
+  menu.classList.toggle("open");
+  menu.classList.toggle("closed");
+  // Ferme l'autre menu si ouvert
+  const other = document.getElementById("more-dropdown");
+  other.classList.remove("open");
+  other.classList.add("closed");
+}
+
+async function setAvatar(emoji) {
+  const { error } = await db.auth.updateUser({ data: { avatar: emoji } });
+  if (error) { console.error("AVATAR SAVE ERROR =", error); return; }
+  if (currentUser) {
+    currentUser.user_metadata = { ...(currentUser.user_metadata || {}), avatar: emoji };
+  }
+  updateAvatarUI();
+  // Re-render le contenu du modal pour mettre à jour l'état "selected"
+  const body = document.getElementById("info-modal-body");
+  if (body) body.innerHTML = renderAvatar();
+}
+
+async function resetAvatar() {
+  const { error } = await db.auth.updateUser({ data: { avatar: null } });
+  if (error) { console.error("AVATAR RESET ERROR =", error); return; }
+  if (currentUser) {
+    currentUser.user_metadata = { ...(currentUser.user_metadata || {}), avatar: null };
+  }
+  updateAvatarUI();
+  const body = document.getElementById("info-modal-body");
+  if (body) body.innerHTML = renderAvatar();
+}
+
+function setAvatarTab(name) {
+  currentAvatarTab = name;
+  const body = document.getElementById("info-modal-body");
+  if (body) body.innerHTML = renderAvatar();
+}
+
+function renderAvatar() {
+  const current = getCurrentAvatar();
+  const fallback = getAvatarFallback();
+  const previewContent = current || fallback;
+
+  const tabs = Object.keys(AVATAR_CATEGORIES).map(name => `
+    <button class="avatar-tab ${name === currentAvatarTab ? 'active' : ''}" onclick="setAvatarTab('${name}')">${name}</button>
+  `).join('');
+
+  const cells = AVATAR_CATEGORIES[currentAvatarTab].map(emoji => `
+    <div class="avatar-cell ${emoji === current ? 'selected' : ''}" onclick="setAvatar('${emoji}')">${emoji}</div>
+  `).join('');
+
+  return `
+    <h2>🎭 Mon avatar</h2>
+    <p class="info-subtitle">Choisis l'emoji qui te représente</p>
+
+    <div class="avatar-current">
+      <div class="avatar-current-preview">${previewContent}</div>
+      <div class="avatar-current-text">
+        <div class="avatar-current-title">${current ? 'Avatar actuel' : 'Avatar par défaut'}</div>
+        <div class="avatar-current-sub">${current ? 'Clique sur un autre emoji pour changer' : 'Choisis-en un dans la liste'}</div>
+        ${current ? `<button class="avatar-reset" onclick="resetAvatar()">Réinitialiser</button>` : ''}
+      </div>
+    </div>
+
+    <div class="avatar-tabs">${tabs}</div>
+    <div class="avatar-grid">${cells}</div>
+  `;
+}
 
 // ==========================================
 //  GO
