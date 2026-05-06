@@ -519,26 +519,6 @@ function celebrate(taskId) {
   });
 }
 
-  // Salves continues depuis les côtés pendant 2 secondes
-  (function frame() {
-    confetti({
-      particleCount: 3,
-      angle: 60,
-      spread: 55,
-      origin: { x: 0, y: 0.7 },
-      colors: ["#3b82f6", "#22c55e", "#f59e0b"]
-    });
-    confetti({
-      particleCount: 3,
-      angle: 120,
-      spread: 55,
-      origin: { x: 1, y: 0.7 },
-      colors: ["#ef4444", "#a855f7", "#22c55e"]
-    });
-    if (Date.now() < end) requestAnimationFrame(frame);
-  }());
-}
-
 // ==========================================
 //  ÉDITION INLINE
 // ==========================================
