@@ -480,3 +480,14 @@ body { padding-bottom: 100px !important; }
 .btn.danger:hover {
   box-shadow: 0 12px 30px rgba(239,68,68,0.4);
 }
+/* 📲 BOUTON D'INSTALLATION PWA */
+.more-item.install-item {
+  background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(37,99,235,0.15));
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  color: #93c5fd;
+  font-weight: 600;
+}
+.more-item.install-item:hover {
+  background: linear-gradient(135deg, rgba(59,130,246,0.25), rgba(37,99,235,0.25));
+  color: #bfdbfe;
+}
