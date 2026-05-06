@@ -293,7 +293,8 @@ window.toggleTask = async function(id, currentDone) {
   // Si on vient de cocher la dernière tâche en cours -> on célèbre 🎉
   const justCompleted = !currentDone;
   if (justCompleted && activeBeforeCount === 1) {
-    celebrate();
+    celebrate(id);
+    await new Promise(r => setTimeout(r, 2000));
   }
 
   await loadTasks();
@@ -491,22 +492,32 @@ function showCompletionToast() {
   }, 3500);
 }
 
-function celebrate() {
+function celebrate(taskId) {
   if (typeof confetti !== "function") return;
-
-  // Affiche le toast de félicitations
   showCompletionToast();
 
-  const duration = 2000;
-  const end = Date.now() + duration;
+  // Récupère la position du petit carré blanc (check-btn)
+  let originX = 0.5, originY = 0.5;
+  const taskEl = document.getElementById(`task-${taskId}`);
+  if (taskEl) {
+    const btn = taskEl.querySelector(".check-btn");
+    if (btn) {
+      const rect = btn.getBoundingClientRect();
+      originX = (rect.left + rect.width / 2) / window.innerWidth;
+      originY = (rect.top + rect.height / 2) / window.innerHeight;
+    }
+  }
 
-  // Première salve : depuis le centre, vers le haut
   confetti({
-    particleCount: 80,
-    spread: 70,
-    origin: { y: 0.6 },
+    particleCount: 22,
+    spread: 55,
+    startVelocity: 16,
+    decay: 0.88,
+    ticks: 90,
+    origin: { x: originX, y: originY },
     colors: ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#a855f7"]
   });
+}
 
   // Salves continues depuis les côtés pendant 2 secondes
   (function frame() {
