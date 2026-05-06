@@ -1132,6 +1132,50 @@ function renderAvatar() {
 }
 
 // ==========================================
+//  📲 PWA : Service Worker + Install Prompt
+// ==========================================
+
+// Enregistrement du service worker
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .then((reg) => console.log("SW registered:", reg.scope))
+      .catch((err) => console.error("SW registration failed:", err));
+  });
+}
+
+// Capture de l'événement d'installation pour notre bouton custom
+let deferredInstallPrompt = null;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const btn = document.getElementById("install-menu-item");
+  if (btn) btn.style.display = "block";
+});
+
+window.installApp = async function() {
+  if (!deferredInstallPrompt) {
+    // Fallback : explique comment faire manuellement (iOS Safari notamment)
+    alert("Pour installer Nexora :\n\n• iOS : appuie sur Partager puis 'Sur l'écran d'accueil'\n• Android/Chrome : ouvre le menu et choisis 'Installer l'application'");
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  console.log("Install outcome:", outcome);
+  deferredInstallPrompt = null;
+  const btn = document.getElementById("install-menu-item");
+  if (btn) btn.style.display = "none";
+};
+
+// Cache l'option d'installation si l'app est déjà installée
+window.addEventListener("appinstalled", () => {
+  const btn = document.getElementById("install-menu-item");
+  if (btn) btn.style.display = "none";
+  console.log("Nexora installé !");
+});
+
+// ==========================================
 //  GO
 // ==========================================
 initAuth();
