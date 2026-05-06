@@ -5,6 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="mobile-web-app-capable" content="yes">
   <title>Nexora</title>
+  <!-- PWA / Manifest -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b1220">
+<meta name="description" content="L'app de gestion de tâches pour étudiants">
+
+<!-- Icônes -->
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+<!-- iOS Safari : permettre le mode standalone -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nexora">
+
+<!-- Open Graph (joli aperçu quand partagé sur les réseaux) -->
+<meta property="og:title" content="Nexora">
+<meta property="og:description" content="L'app de gestion de tâches pour étudiants">
+<meta property="og:image" content="/icon-512.png">
+<meta property="og:type" content="website">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -43,6 +62,7 @@
       <div class="more-menu">
         <button class="more-btn" onclick="toggleMoreMenu()">⋯</button>
         <div id="more-dropdown" class="more-dropdown closed">
+          <div class="more-item install-item" id="install-menu-item" onclick="installApp()" style="display:none;">📲 Installer l'app</div>
           <div class="more-item" onclick="showInfoModal('avatar')">🎭 Mon avatar</div>
           <div class="more-item" onclick="showInfoModal('dashboard')">📊 Dashboard</div>
           <div class="more-item" onclick="showInfoModal('support')">💬 Support</div>
