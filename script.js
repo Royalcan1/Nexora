@@ -57,6 +57,7 @@ function updateUI() {
     appView.style.display = "block";
     landingView.style.display = "none";
     updateAvatarUI();
+    updateHero();
   } else {
     loggedOut.style.display = "flex";
     loggedIn.style.display = "none";
@@ -1025,6 +1026,7 @@ async function setAvatar(emoji) {
     currentUser.user_metadata = { ...(currentUser.user_metadata || {}), avatar: emoji };
   }
   updateAvatarUI();
+  updateHero();
   // Re-render le contenu du modal pour mettre à jour l'état "selected"
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderAvatar();
