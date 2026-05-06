@@ -317,3 +317,123 @@ button { border: none; cursor: pointer; }
   margin-top: 4px;
 }
 .avatar-reset:hover { color: #3b82f6; }
+/* 🌟 STATS PILLS DANS LE HERO */
+.stats-pills {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.stat-pill {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #d1d5db;
+}
+.stat-pill.accent {
+  background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(37,99,235,0.15));
+  border-color: rgba(59,130,246,0.35);
+  color: #93c5fd;
+}
+.stat-pill .stat-pill-icon { margin-right: 4px; opacity: 0.85; }
+
+/* 💡 CHIPS DE SUGGESTIONS */
+.suggestion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+  transition: opacity 0.2s ease;
+}
+.chip {
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #d1d5db;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.chip:hover {
+  background: rgba(59,130,246,0.12);
+  border-color: rgba(59,130,246,0.4);
+  color: #93c5fd;
+  transform: translateY(-1px);
+}
+.chip:active { transform: scale(0.95); }
+.suggestion-chips.dim { opacity: 0.4; }
+
+/* 🌱 EMPTY STATE PRINCIPAL */
+.empty-state-big {
+  text-align: center;
+  padding: 50px 20px;
+  background: rgba(255,255,255,0.02);
+  border: 1px dashed rgba(255,255,255,0.08);
+  border-radius: 16px;
+  margin-top: 16px;
+}
+.empty-state-big-emoji {
+  font-size: 48px;
+  margin-bottom: 12px;
+  display: block;
+}
+.empty-state-big-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  opacity: 0.9;
+}
+.empty-state-big-sub {
+  font-size: 13px;
+  opacity: 0.55;
+  line-height: 1.5;
+}
+.empty-state-small {
+  text-align: center;
+  padding: 24px 16px;
+  font-size: 13px;
+  opacity: 0.55;
+}
+.empty-state-small-emoji {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 6px;
+  opacity: 0.7;
+}
+
+/* 🔻 FOOTER */
+.app-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  font-size: 11px;
+  opacity: 0.45;
+  background: linear-gradient(to top, rgba(11,18,32,0.9), transparent);
+  flex-wrap: wrap;
+  z-index: 5;
+  pointer-events: none;
+}
+.app-footer * { pointer-events: auto; }
+.app-footer a {
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s, opacity 0.2s;
+}
+.app-footer a:hover { color: #93c5fd; opacity: 1; }
+.footer-version { opacity: 0.7; }
+
+/* Espace en bas pour ne pas que les tâches soient cachées par le footer */
+body { padding-bottom: 100px !important; }
