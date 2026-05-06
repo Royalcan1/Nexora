@@ -125,6 +125,18 @@
       <div id="info-modal-body"></div>
     </div>
   </div>
+  <!-- Modal de confirmation générique -->
+<div id="confirm-modal" class="auth-modal closed">
+  <div class="auth-modal-content confirm-modal-content">
+    <div class="confirm-icon" id="confirm-icon">⚠️</div>
+    <h2 id="confirm-title">Confirmation</h2>
+    <p class="confirm-message" id="confirm-message">Es-tu sûr ?</p>
+    <div class="confirm-actions">
+      <button class="btn secondary" onclick="confirmCancel()">Annuler</button>
+      <button class="btn primary" id="confirm-ok-btn" onclick="confirmOk()">Confirmer</button>
+    </div>
+  </div>
+</div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
