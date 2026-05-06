@@ -858,14 +858,6 @@ document.addEventListener("click", (e) => {
   if (e.target === resetModal) hideResetModal();
 });
 
-  const profileMenu = document.getElementById("profile-dropdown");
-  const profileBtn = document.getElementById("profile-btn");
-  if (profileMenu && profileMenu.classList.contains("open") && !profileMenu.contains(e.target) && profileBtn && !profileBtn.contains(e.target)) {
-    profileMenu.classList.remove("open");
-    profileMenu.classList.add("closed");
-  }
-});
-
 // ==========================================
 //  🎭 AVATAR / PROFIL
 // ==========================================
