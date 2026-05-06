@@ -75,8 +75,8 @@ button { border: none; cursor: pointer; }
 
 /* 🔐 MODAL D'AUTH (et autres modals) */
 .auth-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1000; transition: opacity 0.25s ease; }
-.auth-modal.closed { opacity: 0; pointer-events: none; }
-.auth-modal.open { opacity: 1; pointer-events: auto; }
+.auth-modal.closed { opacity: 0; pointer-events: none; transform: none; max-height: none; }
+.auth-modal.open { opacity: 1; pointer-events: auto; transform: none; max-height: none; }
 .auth-modal-content { background: #111827; border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; padding: 32px 28px; width: 90%; max-width: 380px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5); max-height: 85vh; overflow-y: auto; }
 .auth-modal-content h2 { margin-top: 0; margin-bottom: 20px; }
 .auth-modal-content input { width: 100%; box-sizing: border-box; padding: 12px 14px; margin-bottom: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; font-size: 16px; outline: none; transition: all 0.2s ease; }
