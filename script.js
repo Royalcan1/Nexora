@@ -359,32 +359,54 @@ window.clearDoneTasks = async function(event) {
 function render() {
   let active = tasks.filter(t => !t.done).sort((a, b) => ({ urgent: 0, medium: 1, normal: 2 }[a.priority] - { urgent: 0, medium: 1, normal: 2 }[b.priority]));
   let done = tasks.filter(t => t.done);
-  let html = `
-    <h2>Tes tâches</h2>
+
+  // Empty state global : aucune tâche du tout
+  if (active.length === 0 && done.length === 0) {
+    document.getElementById("output").innerHTML = `
+      <div class="empty-state-big">
+        <span class="empty-state-big-emoji">🌱</span>
+        <div class="empty-state-big-title">Tout est calme par ici</div>
+        <div class="empty-state-big-sub">Ajoute ta première tâche pour démarrer.<br>Tu peux en mettre plusieurs d'un coup avec <b>+</b>, <b>,</b> ou <b>/</b>.</div>
+      </div>
+    `;
+    updateHero();
+    return;
+  }
+
+  let html = `<h2>Tes tâches</h2>
     <div class="done-section">
       <div class="done-header" onclick="toggleActiveSection()">Tâches en cours (${active.length})</div>
       <div id="active-list" class="open">`;
-  active.forEach((t) => {
-  const safeText = t.text.replace(/"/g, "&quot;");
-  const due = getDueDate(t.text);
-  const dueBadge = due ? `<span class="due-badge ${due.urgency}">${due.label}</span>` : '';
-  html += `<div class="task ${t.priority}" id="task-${t.id}">
-    <button class="check-btn" onclick="toggleTask(${t.id}, ${t.done})"></button>
-    <div class="task-content">
-      <div class="task-header-row">
-        <b class="task-text"
-           contenteditable="true"
-           spellcheck="false"
-           data-id="${t.id}"
-           data-original="${safeText}"
-           onkeydown="handleEditKey(event, this)"
-           onblur="finishEdit(this)">${t.text}</b>
-        ${dueBadge}
-      </div>
-      <div class="task-meta">priorité : ${t.priority}</div>
-    </div>
-  </div>`;
-});
+
+  if (active.length === 0) {
+    html += `
+      <div class="empty-state-small">
+        <span class="empty-state-small-emoji">✨</span>
+        Tout est terminé ! Profite ou ajoute-en de nouvelles.
+      </div>`;
+  } else {
+    active.forEach((t) => {
+      const safeText = t.text.replace(/"/g, "&quot;");
+      const due = getDueDate(t.text);
+      const dueBadge = due ? `<span class="due-badge ${due.urgency}">${due.label}</span>` : '';
+      html += `<div class="task ${t.priority}" id="task-${t.id}">
+        <button class="check-btn" onclick="toggleTask(${t.id}, ${t.done})"></button>
+        <div class="task-content">
+          <div class="task-header-row">
+            <b class="task-text"
+               contenteditable="true"
+               spellcheck="false"
+               data-id="${t.id}"
+               data-original="${safeText}"
+               onkeydown="handleEditKey(event, this)"
+               onblur="finishEdit(this)">${t.text}</b>
+            ${dueBadge}
+          </div>
+          <div class="task-meta">priorité : ${t.priority}</div>
+        </div>
+      </div>`;
+    });
+  }
   html += `</div></div>
     <div class="done-section">
       <div class="done-header" onclick="toggleDoneSection()">
@@ -400,6 +422,7 @@ function render() {
   });
   html += `</div></div>`;
   document.getElementById("output").innerHTML = html;
+  updateHero();
 }
 
 function toggleActiveSection() {
@@ -511,6 +534,92 @@ function getDueDate(text) {
 
   return null;
 }
+
+// ==========================================
+//  🌟 ACCUEIL PERSONNALISÉ + STATS + CHIPS
+// ==========================================
+
+function getDisplayName() {
+  if (!currentUser?.email) return "toi";
+  const prefix = currentUser.email.split("@")[0];
+  const firstPart = prefix.split(/[._-]/)[0];
+  return firstPart.charAt(0).toUpperCase() + firstPart.slice(1).toLowerCase();
+}
+
+function getSalutation() {
+  const h = new Date().getHours();
+  if (h < 6) return "Bonne nuit";
+  if (h < 12) return "Bonjour";
+  if (h < 18) return "Bon après-midi";
+  return "Bonsoir";
+}
+
+function getFormattedDate() {
+  const days = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+  const months = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+  const now = new Date();
+  return `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]}`;
+}
+
+function updateHero() {
+  const greetingEl = document.getElementById("greeting");
+  const dateEl = document.getElementById("date-line");
+  const pillsEl = document.getElementById("stats-pills");
+  if (!greetingEl || !dateEl || !pillsEl || !currentUser) return;
+
+  const avatar = getCurrentAvatar();
+  const wave = avatar || "👋";
+  greetingEl.textContent = `${getSalutation()}, ${getDisplayName()} ${wave}`;
+
+  const active = tasks.filter(t => !t.done).length;
+  const done = tasks.filter(t => t.done).length;
+  const total = active + done;
+  const completion = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  let summary;
+  if (total === 0) summary = "Prêt à démarrer ?";
+  else if (active === 0) summary = "Tout est terminé, bravo !";
+  else if (active === 1) summary = "1 tâche t'attend";
+  else summary = `${active} tâches t'attendent`;
+
+  dateEl.textContent = `${getFormattedDate()} · ${summary}`;
+
+  if (total === 0) {
+    pillsEl.innerHTML = "";
+  } else {
+    pillsEl.innerHTML = `
+      <span class="stat-pill"><span class="stat-pill-icon">🎯</span>${active} active${active > 1 ? "s" : ""}</span>
+      <span class="stat-pill"><span class="stat-pill-icon">✅</span>${done} terminée${done > 1 ? "s" : ""}</span>
+      <span class="stat-pill accent"><span class="stat-pill-icon">📊</span>${completion}% complétion</span>
+    `;
+  }
+}
+
+function addSuggestion(text) {
+  const input = document.getElementById("input");
+  const current = input.value.trim();
+  if (current) {
+    input.value = current + " + " + text;
+  } else {
+    input.value = text;
+  }
+  input.focus();
+  // Place le curseur à la fin
+  input.setSelectionRange(input.value.length, input.value.length);
+}
+
+// Atténuation des chips quand l'utilisateur tape
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("input");
+  if (input) {
+    input.addEventListener("input", () => {
+      const chips = document.getElementById("suggestion-chips");
+      if (!chips) return;
+      if (input.value.trim()) chips.classList.add("dim");
+      else chips.classList.remove("dim");
+    });
+  }
+});
 
 // ==========================================
 //  🎉 CONFETTIS + TOAST DE FIN DE TÂCHES
