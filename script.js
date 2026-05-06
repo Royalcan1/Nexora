@@ -376,7 +376,7 @@ function render() {
            data-original="${safeText}"
            onkeydown="handleEditKey(event, this)"
            onblur="finishEdit(this)">${t.text}</b>
-        <br>priorité : ${t.priority}<br>temps : ${t.time}
+        <br>priorité : ${t.priority}
       </div>
     </div>`;
   });
