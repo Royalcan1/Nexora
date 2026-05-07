@@ -670,6 +670,191 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ==========================================
+//  🔔 NOTIFICATIONS
+// ==========================================
+
+function getNotificationSettings() {
+  return currentUser?.user_metadata?.notifications || {
+    enabled: false,
+    times: ["09:00", "13:00", "18:00"]
+  };
+}
+
+async function saveNotificationSettings(settings) {
+  const { error } = await db.auth.updateUser({ data: { notifications: settings } });
+  if (error) { console.error("NOTIF SAVE ERROR =", error); return false; }
+  if (currentUser) {
+    currentUser.user_metadata = { ...(currentUser.user_metadata || {}), notifications: settings };
+  }
+  scheduleTodayNotifications();
+  return true;
+}
+
+async function requestNotifPermission() {
+  if (!("Notification" in window)) return "unsupported";
+  if (Notification.permission === "granted") return "granted";
+  if (Notification.permission === "denied") return "denied";
+  return await Notification.requestPermission();
+}
+
+let notifTimeouts = [];
+
+function scheduleTodayNotifications() {
+  notifTimeouts.forEach((t) => clearTimeout(t));
+  notifTimeouts = [];
+
+  const s = getNotificationSettings();
+  if (!s.enabled) return;
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+  const now = new Date();
+  s.times.forEach((timeStr) => {
+    const [h, m] = timeStr.split(":").map(Number);
+    const target = new Date();
+    target.setHours(h, m, 0, 0);
+    if (target <= now) return;
+    const delay = target - now;
+    const t = setTimeout(() => fireReminder(timeStr), delay);
+    notifTimeouts.push(t);
+  });
+  console.log(`Notifs planifiées : ${notifTimeouts.length} aujourd'hui`);
+}
+
+async function fireReminder() {
+  const active = tasks.filter((t) => !t.done);
+  if (active.length === 0) return;
+
+  const urgent = active.filter((t) => t.priority === "urgent").length;
+  let body;
+  if (urgent > 0) body = `${urgent} tâche${urgent > 1 ? "s" : ""} urgente${urgent > 1 ? "s" : ""} ! ${active.length} en tout.`;
+  else if (active.length === 1) body = `1 tâche en cours : ${active[0].text}`;
+  else body = `Tu as ${active.length} tâches en cours. Allez, on s'y met !`;
+
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification("📚 Nexora", {
+      body,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      tag: "nexora-reminder",
+      renotify: true,
+      vibrate: [100, 50, 100]
+    });
+  } catch (e) {
+    console.error("Notif error:", e);
+  }
+}
+
+async function testNotification() {
+  const perm = await requestNotifPermission();
+  if (perm !== "granted") {
+    showConfirm({
+      icon: "🚫",
+      title: "Permission refusée",
+      message: "Pour recevoir des notifications, autorise-les dans les réglages de ton navigateur ou de ton téléphone.",
+      confirmText: "OK"
+    });
+    return;
+  }
+  await fireReminder();
+}
+
+async function toggleNotifEnabled(checkbox) {
+  if (checkbox.checked) {
+    const perm = await requestNotifPermission();
+    if (perm !== "granted") {
+      checkbox.checked = false;
+      showConfirm({
+        icon: "🚫",
+        title: "Permission refusée",
+        message: perm === "unsupported"
+          ? "Ton navigateur ne supporte pas les notifications. Sur iPhone, installe d'abord Nexora sur ton écran d'accueil et utilise iOS 16.4+."
+          : "Autorise les notifications dans les réglages de ton téléphone pour utiliser cette fonctionnalité.",
+        confirmText: "OK"
+      });
+      return;
+    }
+  }
+  const s = getNotificationSettings();
+  s.enabled = checkbox.checked;
+  await saveNotificationSettings(s);
+  document.getElementById("info-modal-body").innerHTML = renderNotifications();
+}
+
+async function updateNotifTime(index, value) {
+  const s = getNotificationSettings();
+  s.times[index] = value;
+  await saveNotificationSettings(s);
+}
+
+async function addNotifTime() {
+  const s = getNotificationSettings();
+  if (s.times.length >= 6) return;
+  s.times.push("12:00");
+  await saveNotificationSettings(s);
+  document.getElementById("info-modal-body").innerHTML = renderNotifications();
+}
+
+async function removeNotifTime(index) {
+  const s = getNotificationSettings();
+  if (s.times.length <= 1) return;
+  s.times.splice(index, 1);
+  await saveNotificationSettings(s);
+  document.getElementById("info-modal-body").innerHTML = renderNotifications();
+}
+
+function renderNotifications() {
+  const s = getNotificationSettings();
+  const supported = "Notification" in window;
+  const permission = supported ? Notification.permission : "unsupported";
+
+  let permBadge = "";
+  if (!supported) permBadge = `<div class="notif-warn">⚠️ Ton navigateur ne supporte pas les notifications.</div>`;
+  else if (permission === "denied") permBadge = `<div class="notif-warn">🚫 Notifications bloquées dans tes réglages.</div>`;
+
+  const timeRows = s.times.map((t, i) => `
+    <div class="notif-time-row">
+      <input type="time" class="notif-time-input" value="${t}" onchange="updateNotifTime(${i}, this.value)" ${!s.enabled ? 'disabled' : ''}>
+      ${s.times.length > 1 ? `<button class="notif-time-remove" onclick="removeNotifTime(${i})" ${!s.enabled ? 'disabled' : ''}>✕</button>` : ''}
+    </div>
+  `).join("");
+
+  return `
+    <h2>🔔 Notifications</h2>
+    <p class="info-subtitle">Reçois des rappels de tes tâches en cours</p>
+
+    ${permBadge}
+
+    <div class="notif-toggle-row">
+      <div>
+        <div class="notif-toggle-title">Activer les rappels</div>
+        <div class="notif-toggle-sub">Notifications aux horaires choisis</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="toggleNotifEnabled(this)">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="notif-times-section ${!s.enabled ? 'disabled' : ''}">
+      <div class="notif-section-title">⏰ Horaires des rappels</div>
+      ${timeRows}
+      ${s.times.length < 6 ? `<button class="notif-add-time" onclick="addNotifTime()" ${!s.enabled ? 'disabled' : ''}>+ Ajouter un horaire</button>` : ''}
+    </div>
+
+    <div class="notif-test-section">
+      <button class="btn primary" onclick="testNotification()">📤 Envoyer une notif de test</button>
+    </div>
+
+    <div class="notif-info">
+      <p><b>📌 À savoir</b></p>
+      <p>Les rappels arrivent quand l'app est ouverte ou récente en arrière-plan. Pour des notifs même app fermée, on ajoutera plus tard un serveur push.</p>
+      <p>Sur iPhone : nécessite iOS 16.4+ et Nexora installé sur l'écran d'accueil.</p>
+    </div>
+  `;
+}
+
+// ==========================================
 //  🎉 CONFETTIS + TOAST DE FIN DE TÂCHES
 // ==========================================
 
