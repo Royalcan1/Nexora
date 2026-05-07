@@ -48,22 +48,21 @@ function handleAuthChange(session) {
 }
 
 function updateUI() {
-  const loggedOut = document.getElementById("auth-buttons-logged-out");
   const loggedIn = document.getElementById("auth-buttons-logged-in");
   const appView = document.getElementById("app-view");
   const landingView = document.getElementById("landing-view");
 
   if (currentUser) {
-    loggedOut.style.display = "none";
-    loggedIn.style.display = "flex";
+    document.body.classList.remove("logged-out");
+    if (loggedIn) loggedIn.style.display = "flex";
     appView.style.display = "block";
     landingView.style.display = "none";
     updateAvatarUI();
     updateHero();
     scheduleTodayNotifications();
   } else {
-    loggedOut.style.display = "flex";
-    loggedIn.style.display = "none";
+    document.body.classList.add("logged-out");
+    if (loggedIn) loggedIn.style.display = "none";
     appView.style.display = "none";
     landingView.style.display = "block";
   }
