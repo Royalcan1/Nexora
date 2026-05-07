@@ -718,3 +718,33 @@ body { padding-bottom: 100px !important; }
   .update-banner-text { font-size: 12px; }
   .update-banner-btn { padding: 6px 12px; font-size: 12px; }
 }
+/* 👤 SECTION PROFIL (nom/prénom) */
+.profile-name-section { margin-bottom: 18px; }
+.profile-input-label {
+  display: block;
+  font-size: 12px;
+  opacity: 0.6;
+  margin: 12px 0 6px 0;
+  font-weight: 500;
+}
+.profile-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: white;
+  font-size: 16px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.profile-input:focus {
+  border-color: rgba(59,130,246,0.5);
+  background: rgba(255,255,255,0.07);
+}
+.profile-section-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+  margin: 22px 0 18px 0;
+}
