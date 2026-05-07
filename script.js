@@ -1476,9 +1476,6 @@ window.installApp = async function() {
   deferredInstallPrompt = null;
   refreshInstallButtonVisibility();
 };
-  // Fallback (rare)
-  showInfoModal("install-ios");
-};
 
 // Quand l'app est installée → on cache le bouton
 window.addEventListener("appinstalled", () => {
