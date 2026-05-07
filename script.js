@@ -78,6 +78,12 @@ function showAuthModal(mode) {
   document.getElementById("auth-error").style.color = "";
   document.getElementById("auth-email").value = "";
   document.getElementById("auth-password").value = "";
+  // 🆕 Reset des champs nom/prénom
+  const fn = document.getElementById("auth-firstname");
+  const ln = document.getElementById("auth-lastname");
+  if (fn) fn.value = "";
+  if (ln) ln.value = "";
+
   const modal = document.getElementById("auth-modal");
   modal.classList.remove("closed");
   modal.classList.add("open");
@@ -115,7 +121,8 @@ function updateAuthModalUI() {
     switchLink.textContent = "Se connecter";
   }
   // 🆕 Champs nom/prénom uniquement en signup
-  document.getElementById("auth-name-fields").style.display = authMode === "login" ? "none" : "block";
+  const nameFields = document.getElementById("auth-name-fields");
+  if (nameFields) nameFields.style.display = authMode === "login" ? "none" : "block";
 }
 
 async function submitAuth() {
@@ -135,23 +142,22 @@ async function submitAuth() {
   }
 
   try {
-   if (authMode === "signup") {
-  // 🆕 Récupère et valide le prénom
-  const firstName = document.getElementById("auth-firstname").value.trim();
-  const lastName = document.getElementById("auth-lastname").value.trim();
-  if (!firstName) {
-    errorEl.textContent = "Ton prénom est requis.";
-    return;
-  }
-  const { data, error } = await db.auth.signUp({
-    email,
-    password,
-    options: { data: { first_name: firstName, last_name: lastName } }
-  });
-  if (error) throw error;
-  console.log("SIGNUP OK =", data);
-  hideAuthModal();
-}
+    if (authMode === "signup") {
+      // 🆕 Récupère et valide le prénom
+      const firstName = document.getElementById("auth-firstname").value.trim();
+      const lastName = document.getElementById("auth-lastname").value.trim();
+      if (!firstName) {
+        errorEl.textContent = "Ton prénom est requis.";
+        return;
+      }
+      const { data, error } = await db.auth.signUp({
+        email,
+        password,
+        options: { data: { first_name: firstName, last_name: lastName } }
+      });
+      if (error) throw error;
+      console.log("SIGNUP OK =", data);
+      hideAuthModal();
     } else {
       const { data, error } = await db.auth.signInWithPassword({ email, password });
       if (error) throw error;
@@ -291,7 +297,6 @@ async function loadTasks() {
 window.toggleTask = async function(id, currentDone) {
   if (!id) return;
 
-  // On regarde combien de tâches étaient en cours AVANT le toggle
   const activeBeforeCount = tasks.filter(t => !t.done).length;
 
   const { data, error } = await db
@@ -305,7 +310,6 @@ window.toggleTask = async function(id, currentDone) {
   }
   console.log("UPDATED TASK =", data);
 
-  // Si on vient de cocher la dernière tâche en cours -> on célèbre 🎉
   const justCompleted = !currentDone;
   if (justCompleted && activeBeforeCount === 1) {
     celebrate(id);
@@ -467,12 +471,14 @@ function toggleMoreMenu() {
   menu.classList.toggle("open");
   menu.classList.toggle("closed");
   const profile = document.getElementById("profile-dropdown");
-  profile.classList.remove("open");
-  profile.classList.add("closed");
+  if (profile) {
+    profile.classList.remove("open");
+    profile.classList.add("closed");
+  }
 }
 
 // ==========================================
-//  HELPERS — détection priorité / temps (v2)
+//  HELPERS — détection priorité / temps / date
 // ==========================================
 
 function getPriority(text) {
@@ -508,6 +514,7 @@ function getTime(text) {
   if (/\b(révision|revision|réviser|reviser|fiche|lecture|lire|exercice|exo|relire)\b/.test(text)) return "45 min";
   return "30 min";
 }
+
 function getDueDate(text) {
   const lower = text.toLowerCase();
   const today = new Date();
@@ -603,7 +610,15 @@ function confirmCancel() {
 // ==========================================
 
 function getDisplayName() {
-  if (!currentUser?.email) return "toi";
+  if (!currentUser) return "toi";
+  // 🆕 Priorité : first_name défini par l'utilisateur
+  const fn = currentUser.user_metadata?.first_name;
+  if (fn && fn.trim()) {
+    const trimmed = fn.trim();
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+  }
+  // Fallback : extrait depuis l'email (pour anciens users sans prénom)
+  if (!currentUser.email) return "toi";
   const prefix = currentUser.email.split("@")[0];
   const firstPart = prefix.split(/[._-]/)[0];
   return firstPart.charAt(0).toUpperCase() + firstPart.slice(1).toLowerCase();
@@ -667,7 +682,6 @@ function addSuggestion(text) {
     input.value = text;
   }
   input.focus();
-  // Place le curseur à la fin
   input.setSelectionRange(input.value.length, input.value.length);
 }
 
@@ -779,7 +793,6 @@ async function testNotification() {
     return;
   }
 
-  // Notification test indépendante (marche même sans tâches en cours)
   try {
     const reg = await navigator.serviceWorker.ready;
     console.log("SW ready, on envoie la notif...");
@@ -937,7 +950,6 @@ function celebrate(taskId) {
   if (typeof confetti !== "function") return;
   showCompletionToast();
 
-  // Récupère la position du petit carré blanc (check-btn)
   let originX = 0.5, originY = 0.5;
   const taskEl = document.getElementById(`task-${taskId}`);
   if (taskEl) {
@@ -990,7 +1002,7 @@ function finishEdit(el) {
 }
 
 // ==========================================
-//  📊 MODALS INFO (Dashboard / Support / Contact / À propos)
+//  📊 MODALS INFO (Profil / Dashboard / Support / Contact / À propos)
 // ==========================================
 
 const CONTACT_EMAIL = "nexora.app@proton.me";
@@ -999,8 +1011,10 @@ const APP_VERSION = "0.2";
 
 function showInfoModal(type) {
   const menu = document.getElementById("more-dropdown");
-  menu.classList.remove("open");
-  menu.classList.add("closed");
+  if (menu) {
+    menu.classList.remove("open");
+    menu.classList.add("closed");
+  }
 
   const body = document.getElementById("info-modal-body");
   body.innerHTML = renderInfoModalContent(type);
@@ -1199,6 +1213,7 @@ function renderAbout() {
     </div>
   `;
 }
+
 function renderInstallIOS() {
   return `
     <h2>📲 Installer Nexora</h2>
@@ -1206,7 +1221,7 @@ function renderInstallIOS() {
 
     <div class="install-step">
       <div class="install-step-num">1</div>
-      <div class="install-step-text">Appuie sur le bouton <b>Partager</b> 
+      <div class="install-step-text">Appuie sur le bouton <b>Partager</b>
         <span class="ios-share-icon">⎙</span> en bas de Safari</div>
     </div>
     <div class="install-step">
@@ -1234,15 +1249,15 @@ function renderInstallIOS() {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     const authModal = document.getElementById("auth-modal");
-    if (authModal.classList.contains("open")) submitAuth();
+    if (authModal && authModal.classList.contains("open")) submitAuth();
     const confirmModal = document.getElementById("confirm-modal");
     if (confirmModal && confirmModal.classList.contains("open")) confirmOk();
   }
   if (e.key === "Escape") {
     const authModal = document.getElementById("auth-modal");
-    if (authModal.classList.contains("open")) hideAuthModal();
+    if (authModal && authModal.classList.contains("open")) hideAuthModal();
     const infoModal = document.getElementById("info-modal");
-    if (infoModal.classList.contains("open")) hideInfoModal();
+    if (infoModal && infoModal.classList.contains("open")) hideInfoModal();
     const confirmModal = document.getElementById("confirm-modal");
     if (confirmModal && confirmModal.classList.contains("open")) confirmCancel();
   }
@@ -1263,7 +1278,7 @@ document.addEventListener("click", (e) => {
     profileMenu.classList.add("closed");
   }
 
-  // 🆕 Fermeture des modals en cliquant sur le backdrop
+  // Fermeture des modals en cliquant sur le backdrop
   const authModal = document.getElementById("auth-modal");
   if (e.target === authModal) hideAuthModal();
 
@@ -1272,8 +1287,9 @@ document.addEventListener("click", (e) => {
 
   const resetModal = document.getElementById("reset-modal");
   if (e.target === resetModal) hideResetModal();
+
   const confirmModal = document.getElementById("confirm-modal");
-if (e.target === confirmModal) confirmCancel();
+  if (e.target === confirmModal) confirmCancel();
 });
 
 // ==========================================
@@ -1299,6 +1315,9 @@ function getCurrentAvatar() {
 }
 
 function getAvatarFallback() {
+  // 🆕 Initiale du prénom si défini, sinon de l'email
+  const fn = currentUser?.user_metadata?.first_name;
+  if (fn && fn.trim()) return fn.trim().charAt(0).toUpperCase();
   return (currentUser?.email || "?").charAt(0).toUpperCase();
 }
 
@@ -1321,10 +1340,11 @@ function toggleProfileMenu() {
   const menu = document.getElementById("profile-dropdown");
   menu.classList.toggle("open");
   menu.classList.toggle("closed");
-  // Ferme l'autre menu si ouvert
   const other = document.getElementById("more-dropdown");
-  other.classList.remove("open");
-  other.classList.add("closed");
+  if (other) {
+    other.classList.remove("open");
+    other.classList.add("closed");
+  }
 }
 
 async function setAvatar(emoji) {
@@ -1335,7 +1355,6 @@ async function setAvatar(emoji) {
   }
   updateAvatarUI();
   updateHero();
-  // Re-render le contenu du modal pour mettre à jour l'état "selected"
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderAvatar();
 }
@@ -1347,6 +1366,7 @@ async function resetAvatar() {
     currentUser.user_metadata = { ...(currentUser.user_metadata || {}), avatar: null };
   }
   updateAvatarUI();
+  updateHero();
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderAvatar();
 }
@@ -1354,13 +1374,51 @@ async function resetAvatar() {
 function setAvatarTab(name) {
   currentAvatarTab = name;
   const body = document.getElementById("info-modal-body");
+  if (body) body.innerHTML = renderAvatarGridOnly();
+  // Met à jour visuellement les onglets sans tout reconstruire (preserve focus)
+  // → on rebuild quand même tout pour rester simple
   if (body) body.innerHTML = renderAvatar();
+}
+
+// 🆕 Sauvegarde du nom/prénom depuis la modal Profil
+async function saveProfileName() {
+  const firstNameEl = document.getElementById("profile-firstname");
+  const lastNameEl = document.getElementById("profile-lastname");
+  if (!firstNameEl || !lastNameEl) return;
+
+  const firstName = firstNameEl.value.trim();
+  const lastName = lastNameEl.value.trim();
+
+  // Pas de save si rien n'a changé
+  const currentFn = currentUser?.user_metadata?.first_name || "";
+  const currentLn = currentUser?.user_metadata?.last_name || "";
+  if (firstName === currentFn && lastName === currentLn) return;
+
+  const { error } = await db.auth.updateUser({
+    data: { first_name: firstName, last_name: lastName }
+  });
+  if (error) { console.error("PROFILE NAME SAVE ERROR =", error); return; }
+
+  if (currentUser) {
+    currentUser.user_metadata = {
+      ...(currentUser.user_metadata || {}),
+      first_name: firstName,
+      last_name: lastName
+    };
+  }
+
+  // Rafraîchit le greeting et l'avatar fallback immédiatement
+  updateHero();
+  updateAvatarUI();
+  console.log("✅ Profil mis à jour :", firstName, lastName);
 }
 
 function renderAvatar() {
   const current = getCurrentAvatar();
   const fallback = getAvatarFallback();
   const previewContent = current || fallback;
+  const fn = currentUser?.user_metadata?.first_name || "";
+  const ln = currentUser?.user_metadata?.last_name || "";
 
   const tabs = Object.keys(AVATAR_CATEGORIES).map(name => `
     <button class="avatar-tab ${name === currentAvatarTab ? 'active' : ''}" onclick="setAvatarTab('${name}')">${name}</button>
@@ -1371,8 +1429,20 @@ function renderAvatar() {
   `).join('');
 
   return `
-    <h2>🎭 Mon avatar</h2>
-    <p class="info-subtitle">Choisis l'emoji qui te représente</p>
+    <h2>👤 Mon profil</h2>
+    <p class="info-subtitle">Personnalise ton apparence dans Nexora</p>
+
+    <div class="profile-name-section">
+      <label class="profile-input-label">Prénom</label>
+      <input type="text" id="profile-firstname" class="profile-input" placeholder="Ton prénom" maxlength="50" value="${fn.replace(/"/g, '&quot;')}" onblur="saveProfileName()">
+
+      <label class="profile-input-label">Nom (optionnel)</label>
+      <input type="text" id="profile-lastname" class="profile-input" placeholder="Ton nom" maxlength="50" value="${ln.replace(/"/g, '&quot;')}" onblur="saveProfileName()">
+    </div>
+
+    <div class="profile-section-divider"></div>
+
+    <p class="info-subtitle" style="margin-top:0;">Choisis l'emoji qui te représente</p>
 
     <div class="avatar-current">
       <div class="avatar-current-preview">${previewContent}</div>
@@ -1392,7 +1462,6 @@ function renderAvatar() {
 //  📲 PWA : Service Worker + Install Prompt
 // ==========================================
 
-// Détection
 function isStandalonePWA() {
   return window.matchMedia("(display-mode: standalone)").matches
     || window.navigator.standalone === true;
@@ -1404,8 +1473,6 @@ function isIOS() {
 }
 
 let deferredInstallPrompt = null;
-
-// Enregistrement du service worker
 let waitingWorker = null;
 
 if ("serviceWorker" in navigator) {
@@ -1420,13 +1487,11 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/sw.js").then((reg) => {
       console.log("SW registered:", reg.scope);
 
-      // SW déjà en attente au chargement (cas où l'user revient sans avoir update)
       if (reg.waiting && navigator.serviceWorker.controller) {
         waitingWorker = reg.waiting;
         showUpdateBanner();
       }
 
-      // Détection d'une nouvelle version qui s'installe
       reg.addEventListener("updatefound", () => {
         const newSW = reg.installing;
         if (!newSW) return;
@@ -1438,7 +1503,6 @@ if ("serviceWorker" in navigator) {
         });
       });
 
-      // Vérifie les maj toutes les 30 min tant que l'app est ouverte
       setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
     }).catch((err) => console.error("SW registration failed:", err));
   });
@@ -1457,52 +1521,41 @@ window.dismissUpdateBanner = function() {
 window.applyUpdate = function() {
   if (waitingWorker) {
     waitingWorker.postMessage({ type: "SKIP_WAITING" });
-    // controllerchange déclenche le reload automatiquement après
   } else {
     window.location.reload();
   }
 };
 
-// Capture du prompt natif (Chrome / Android / Edge)
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
   refreshInstallButtonVisibility();
 });
 
-// Décide si on affiche le bouton "Installer l'app"
 function refreshInstallButtonVisibility() {
   const btn = document.getElementById("install-menu-item");
   if (!btn) return;
 
-  // Déjà installée → on cache
   if (isStandalonePWA()) { btn.style.display = "none"; return; }
-
-  // iOS → on affiche (instructions custom)
   if (isIOS()) { btn.style.display = "block"; return; }
 
-  // Autres : visible uniquement si le prompt natif est dispo
   btn.style.display = deferredInstallPrompt ? "block" : "none";
 }
 
 window.installApp = async function() {
-  // Ferme le menu ⋯
   const menu = document.getElementById("more-dropdown");
   if (menu) { menu.classList.remove("open"); menu.classList.add("closed"); }
 
-  // iOS → modal d'instructions custom
   if (isIOS()) {
     showInfoModal("install-ios");
     return;
   }
 
-  // Pas de prompt natif dispo → fallback iOS-style instructions
   if (!deferredInstallPrompt) {
     showInfoModal("install-ios");
     return;
   }
 
-  // ✨ Confirmation custom dans notre style avant le prompt natif
   const confirmed = await showConfirm({
     icon: "📲",
     title: "Installer Nexora",
@@ -1511,7 +1564,6 @@ window.installApp = async function() {
   });
   if (!confirmed) return;
 
-  // Déclenche le prompt natif (obligatoire pour l'install)
   deferredInstallPrompt.prompt();
   const { outcome } = await deferredInstallPrompt.userChoice;
   console.log("Install outcome:", outcome);
@@ -1519,14 +1571,12 @@ window.installApp = async function() {
   refreshInstallButtonVisibility();
 };
 
-// Quand l'app est installée → on cache le bouton
 window.addEventListener("appinstalled", () => {
   deferredInstallPrompt = null;
   refreshInstallButtonVisibility();
   console.log("Nexora installé !");
 });
 
-// Vérification initiale dès le chargement
 document.addEventListener("DOMContentLoaded", refreshInstallButtonVisibility);
 
 // ==========================================
