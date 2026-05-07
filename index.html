@@ -70,7 +70,7 @@
         <button class="more-btn" onclick="toggleMoreMenu()">⋯</button>
         <div id="more-dropdown" class="more-dropdown closed">
           <div class="more-item install-item" id="install-menu-item" onclick="installApp()" style="display:none;">📲 Installer l'app</div>
-          <div class="more-item" onclick="showInfoModal('avatar')">🎭 Mon avatar</div>
+          <div class="more-item" onclick="showInfoModal('avatar')">👤 Mon profil</div>
           <div class="more-item" onclick="showInfoModal('notifications')">🔔 Notifications</div>
           <div class="more-item" onclick="showInfoModal('dashboard')">📊 Dashboard</div>
           <div class="more-item" onclick="showInfoModal('support')">💬 Support</div>
@@ -123,6 +123,11 @@
     <div class="auth-modal-content">
       <button class="auth-close" onclick="hideAuthModal()">✕</button>
       <h2 id="auth-title">Se connecter</h2>
+      <!-- Champs nom/prénom : visibles uniquement en signup -->
+<div id="auth-name-fields" style="display:none;">
+  <input type="text" id="auth-firstname" placeholder="Prénom" autocomplete="given-name" maxlength="50">
+  <input type="text" id="auth-lastname" placeholder="Nom (optionnel)" autocomplete="family-name" maxlength="50">
+</div>
       <input type="email" id="auth-email" placeholder="Email" autocomplete="email">
       <input type="password" id="auth-password" placeholder="Mot de passe (min. 6 caractères)" autocomplete="current-password">
       <div id="auth-error" class="auth-error"></div>
