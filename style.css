@@ -342,34 +342,6 @@ button { border: none; cursor: pointer; }
 }
 .stat-pill .stat-pill-icon { margin-right: 4px; opacity: 0.85; }
 
-/* 💡 CHIPS DE SUGGESTIONS */
-.suggestion-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 18px;
-  transition: opacity 0.2s ease;
-}
-.chip {
-  padding: 7px 14px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: #d1d5db;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.18s ease;
-}
-.chip:hover {
-  background: rgba(59,130,246,0.12);
-  border-color: rgba(59,130,246,0.4);
-  color: #93c5fd;
-  transform: translateY(-1px);
-}
-.chip:active { transform: scale(0.95); }
-.suggestion-chips.dim { opacity: 0.4; }
-
 /* 🌱 EMPTY STATE PRINCIPAL */
 .empty-state-big {
   text-align: center;
