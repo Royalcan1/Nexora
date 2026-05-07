@@ -5,84 +5,88 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="mobile-web-app-capable" content="yes">
   <title>Nexora</title>
+
   <!-- PWA / Manifest -->
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0b1220">
-<meta name="description" content="L'app de gestion de tâches pour étudiants">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="L'app de gestion de tâches pour étudiants">
 
-<!-- Icônes -->
-<link rel="icon" type="image/png" href="/favicon.png">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <!-- Icônes -->
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
-<!-- iOS Safari : permettre le mode standalone -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Nexora">
+  <!-- iOS Safari : permettre le mode standalone -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Nexora">
 
-<!-- Open Graph (joli aperçu quand partagé sur les réseaux) -->
-<meta property="og:title" content="Nexora">
-<meta property="og:description" content="L'app de gestion de tâches pour étudiants">
-<meta property="og:image" content="/icon-512.png">
-<meta property="og:type" content="website">
+  <!-- Open Graph (joli aperçu quand partagé sur les réseaux) -->
+  <meta property="og:title" content="Nexora">
+  <meta property="og:description" content="L'app de gestion de tâches pour étudiants">
+  <meta property="og:image" content="/icon-512.png">
+  <meta property="og:type" content="website">
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <!-- Bannière de mise à jour -->
-<div id="update-banner" class="update-banner">
-  <span class="update-banner-text">🚀 Nouvelle version disponible</span>
-  <button class="update-banner-btn" onclick="applyUpdate()">Mettre à jour</button>
-  <button class="update-banner-close" onclick="dismissUpdateBanner()" aria-label="Fermer">✕</button>
-</div>
+  <div id="update-banner" class="update-banner">
+    <span class="update-banner-text">🚀 Nouvelle version disponible</span>
+    <button class="update-banner-btn" onclick="applyUpdate()">Mettre à jour</button>
+    <button class="update-banner-close" onclick="dismissUpdateBanner()" aria-label="Fermer">✕</button>
+  </div>
 
+  <!-- Header -->
   <div class="top-header">
-  <div class="header-inner">
-    <div class="logo">
-      <svg viewBox="0 0 64 64" class="logo-icon">
-        <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="3" fill="none"/>
-        <path d="M22 44V20l20 24V20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/>
-      </svg>
-      <span>Nexora</span>
-    </div>
-
-    <!-- Boutons quand CONNECTÉ -->
-    <div class="auth-buttons" id="auth-buttons-logged-in" style="display:none;">
-      <div class="profile-menu">
-        <button class="profile-btn" id="profile-btn" onclick="toggleProfileMenu()">
-          <span id="profile-avatar" class="profile-avatar">N</span>
-        </button>
-        <div id="profile-dropdown" class="profile-dropdown closed">
-          <div class="profile-info">
-            <div class="profile-info-label">Connecté en tant que</div>
-            <div class="profile-info-email" id="profile-email"></div>
-          </div>
-          <div class="profile-divider"></div>
-          <div class="profile-item logout" onclick="logout()">↪ Se déconnecter</div>
-        </div>
+    <div class="header-inner">
+      <div class="logo">
+        <svg viewBox="0 0 64 64" class="logo-icon">
+          <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="3" fill="none"/>
+          <path d="M22 44V20l20 24V20" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </svg>
+        <span>Nexora</span>
       </div>
-      <div class="more-menu">
-        <button class="more-btn" onclick="toggleMoreMenu()">⋯</button>
-        <div id="more-dropdown" class="more-dropdown closed">
-          <div class="more-item install-item" id="install-menu-item" onclick="installApp()" style="display:none;">📲 Installer l'app</div>
-          <div class="more-item" onclick="showInfoModal('avatar')">👤 Mon profil</div>
-          <div class="more-item" onclick="showInfoModal('categories')">🎨 Mes matières</div>
-          <div class="more-item" onclick="showInfoModal('notifications')">🔔 Notifications</div>
-          <div class="more-item" onclick="showInfoModal('dashboard')">📊 Dashboard</div>
-          <div class="more-item" onclick="showInfoModal('support')">💬 Support</div>
-          <div class="more-item" onclick="showInfoModal('contact')">📩 Contact</div>
-          <div class="more-item" onclick="showInfoModal('about')">ℹ️ À propos</div>
+
+      <!-- Boutons quand CONNECTÉ -->
+      <div class="auth-buttons" id="auth-buttons-logged-in" style="display:none;">
+        <div class="profile-menu">
+          <button class="profile-btn" id="profile-btn" onclick="toggleProfileMenu()">
+            <span id="profile-avatar" class="profile-avatar">N</span>
+          </button>
+          <div id="profile-dropdown" class="profile-dropdown closed">
+            <div class="profile-info">
+              <div class="profile-info-label">Connecté en tant que</div>
+              <div class="profile-info-email" id="profile-email"></div>
+            </div>
+            <div class="profile-divider"></div>
+            <div class="profile-item logout" onclick="logout()">↪ Se déconnecter</div>
+          </div>
+        </div>
+        <div class="more-menu">
+          <button class="more-btn" onclick="toggleMoreMenu()">⋯</button>
+          <div id="more-dropdown" class="more-dropdown closed">
+            <div class="more-item install-item" id="install-menu-item" onclick="installApp()" style="display:none;">📲 Installer l'app</div>
+            <div class="more-item" onclick="showInfoModal('avatar')">👤 Mon profil</div>
+            <div class="more-item" onclick="showInfoModal('categories')">🎨 Mes matières</div>
+            <div class="more-item" onclick="showInfoModal('notifications')">🔔 Notifications</div>
+            <div class="more-item" onclick="showInfoModal('dashboard')">📊 Dashboard</div>
+            <div class="more-item" onclick="showInfoModal('support')">💬 Support</div>
+            <div class="more-item" onclick="showInfoModal('contact')">📩 Contact</div>
+            <div class="more-item" onclick="showInfoModal('about')">ℹ️ À propos</div>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
+
   <!-- Vue APP (visible si connecté) -->
   <div class="app" id="app-view" style="display:none;">
-  <div class="hero">
-    <h1 id="greeting">Bonjour 👋</h1>
-    <p class="subtitle" id="date-line">Chargement...</p>
-    <div class="stats-pills" id="stats-pills"></div>
-  </div>
+    <div class="hero">
+      <h1 id="greeting">Bonjour 👋</h1>
+      <p class="subtitle" id="date-line">Chargement...</p>
+      <div class="stats-pills" id="stats-pills"></div>
+    </div>
     <textarea id="input" placeholder="Ex: maths examen demain + devoir français + réviser bio"></textarea>
     <div class="top-actions">
       <button class="btn primary" onclick="addTask()">➕ Ajouter tâches</button>
@@ -90,115 +94,48 @@
     <div id="output"></div>
   </div>
 
- <div class="landing-view" id="landing-view">
+  <!-- Vue LANDING (visible si déconnecté) -->
+  <div class="landing-view" id="landing-view">
 
-  <div class="landing-hero">
-    <h1 class="landing-title">Tes devoirs.<br>Organisés sans effort.</h1>
-    <p class="landing-subtitle">Tape ce que tu as à faire. Nexora classe par priorité, matière et échéance.</p>
-    <div class="landing-cta">
-      <button class="btn primary" onclick="showAuthModal('signup')">Commencer</button>
-      <button class="btn-link" onclick="showAuthModal('login')">Se connecter</button>
+    <div class="landing-hero">
+      <h1 class="landing-title">Tes devoirs.<br>Organisés sans effort.</h1>
+      <p class="landing-subtitle">Tape ce que tu as à faire. Nexora classe par priorité, matière et échéance.</p>
+      <div class="landing-cta">
+        <button class="btn primary" onclick="showAuthModal('signup')">Commencer</button>
+        <button class="btn-link" onclick="showAuthModal('login')">Se connecter</button>
+      </div>
+      <div class="landing-trust">100% gratuit · Sans pub · Pour les étudiants</div>
     </div>
+
+    <div class="landing-preview">
+      <div class="demo-task urgent">
+        <span class="demo-check"></span>
+        <div class="demo-task-body">
+          <b>Examen de maths mercredi</b>
+          <div class="demo-meta">Maths · Mercredi</div>
+        </div>
+      </div>
+      <div class="demo-task medium">
+        <span class="demo-check"></span>
+        <div class="demo-task-body">
+          <b>DM français pour vendredi</b>
+          <div class="demo-meta">Français · Vendredi</div>
+        </div>
+      </div>
+      <div class="demo-task normal">
+        <span class="demo-check"></span>
+        <div class="demo-task-body">
+          <b>Réviser chapitre 3 SVT</b>
+          <div class="demo-meta">SVT</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="landing-meta">
+      Priorité auto · Par matière · Rappels · Installable
+    </div>
+
   </div>
-
-  <div class="landing-preview">
-    <div class="demo-task urgent">
-      <span class="demo-check"></span>
-      <div class="demo-task-body">
-        <b>Examen de maths mercredi</b>
-        <div class="demo-meta">Maths · Mercredi</div>
-      </div>
-    </div>
-    <div class="demo-task medium">
-      <span class="demo-check"></span>
-      <div class="demo-task-body">
-        <b>DM français pour vendredi</b>
-        <div class="demo-meta">Français · Vendredi</div>
-      </div>
-    </div>
-    <div class="demo-task normal">
-      <span class="demo-check"></span>
-      <div class="demo-task-body">
-        <b>Réviser chapitre 3 SVT</b>
-        <div class="demo-meta">SVT</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="landing-meta">
-    Priorité auto · Par matière · Rappels · Installable
-  </div>
-
-</div>
-  <!-- FEATURES -->
-  <div class="landing-features">
-    <div class="feature-card">
-      <div class="feature-icon">🎯</div>
-      <div class="feature-title">Priorité auto</div>
-      <div class="feature-desc">Examen demain ? Nexora le sait. Lecture pour plus tard ? Aussi.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🎨</div>
-      <div class="feature-title">Par matière</div>
-      <div class="feature-desc">Maths, Français, SVT… Tes tâches sont colorées selon leur matière.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🔔</div>
-      <div class="feature-title">Rappels malins</div>
-      <div class="feature-desc">Reçois tes notifs aux horaires que tu choisis. Plus rien d'oublié.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📲</div>
-      <div class="feature-title">Sur ton tel</div>
-      <div class="feature-desc">Installable comme une vraie app, fonctionne sans connexion.</div>
-    </div>
-  </div>
-
-  <!-- PREVIEW -->
-  <div class="landing-preview">
-    <div class="landing-preview-label">Aperçu de tes tâches</div>
-    <div class="demo-task urgent">
-      <span class="demo-check"></span>
-      <div class="demo-task-body">
-        <b>Examen de maths mercredi</b>
-        <div class="demo-meta">priorité : urgent</div>
-      </div>
-      <div class="demo-badges">
-        <span class="demo-cat" style="background:rgba(59,130,246,0.15);color:#93c5fd;border-color:rgba(59,130,246,0.4);">📐 Maths</span>
-        <span class="demo-due hot">Mer.</span>
-      </div>
-    </div>
-    <div class="demo-task medium">
-      <span class="demo-check"></span>
-      <div class="demo-task-body">
-        <b>DM français pour vendredi</b>
-        <div class="demo-meta">priorité : medium</div>
-      </div>
-      <div class="demo-badges">
-        <span class="demo-cat" style="background:rgba(239,68,68,0.15);color:#fca5a5;border-color:rgba(239,68,68,0.4);">📖 Français</span>
-        <span class="demo-due">Ven.</span>
-      </div>
-    </div>
-    <div class="demo-task normal">
-      <span class="demo-check"></span>
-      <div class="demo-task-body">
-        <b>Réviser chapitre 3 SVT</b>
-        <div class="demo-meta">priorité : normal</div>
-      </div>
-      <div class="demo-badges">
-        <span class="demo-cat" style="background:rgba(34,197,94,0.15);color:#86efac;border-color:rgba(34,197,94,0.4);">🌱 SVT</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- BOTTOM CTA -->
-  <div class="landing-bottom-cta">
-    <h3>Prêt à reprendre le contrôle ?</h3>
-    <p>Crée ton compte gratuit en 30 secondes.</p>
-    <button class="btn primary" onclick="showAuthModal('signup')">Commencer maintenant →</button>
-  </div>
-
-</div>
 
   <!-- Modal d'authentification -->
   <div id="auth-modal" class="auth-modal closed">
@@ -206,10 +143,10 @@
       <button class="auth-close" onclick="hideAuthModal()">✕</button>
       <h2 id="auth-title">Se connecter</h2>
       <!-- Champs nom/prénom : visibles uniquement en signup -->
-<div id="auth-name-fields" style="display:none;">
-  <input type="text" id="auth-firstname" placeholder="Prénom" autocomplete="given-name" maxlength="50">
-  <input type="text" id="auth-lastname" placeholder="Nom (optionnel)" autocomplete="family-name" maxlength="50">
-</div>
+      <div id="auth-name-fields" style="display:none;">
+        <input type="text" id="auth-firstname" placeholder="Prénom" autocomplete="given-name" maxlength="50">
+        <input type="text" id="auth-lastname" placeholder="Nom (optionnel)" autocomplete="family-name" maxlength="50">
+      </div>
       <input type="email" id="auth-email" placeholder="Email" autocomplete="email">
       <input type="password" id="auth-password" placeholder="Mot de passe (min. 6 caractères)" autocomplete="current-password">
       <div id="auth-error" class="auth-error"></div>
@@ -233,36 +170,39 @@
     </div>
   </div>
 
-  <!-- Modal d'information générique (Dashboard, Support, Contact, À propos) -->
+  <!-- Modal d'information générique -->
   <div id="info-modal" class="auth-modal closed">
     <div class="auth-modal-content info-modal-content">
       <button class="auth-close" onclick="hideInfoModal()">✕</button>
       <div id="info-modal-body"></div>
     </div>
   </div>
+
   <!-- Modal de confirmation générique -->
-<div id="confirm-modal" class="auth-modal closed">
-  <div class="auth-modal-content confirm-modal-content">
-    <div class="confirm-icon" id="confirm-icon">⚠️</div>
-    <h2 id="confirm-title">Confirmation</h2>
-    <p class="confirm-message" id="confirm-message">Es-tu sûr ?</p>
-    <div class="confirm-actions">
-      <button class="btn secondary" onclick="confirmCancel()">Annuler</button>
-      <button class="btn primary" id="confirm-ok-btn" onclick="confirmOk()">Confirmer</button>
+  <div id="confirm-modal" class="auth-modal closed">
+    <div class="auth-modal-content confirm-modal-content">
+      <div class="confirm-icon" id="confirm-icon">⚠️</div>
+      <h2 id="confirm-title">Confirmation</h2>
+      <p class="confirm-message" id="confirm-message">Es-tu sûr ?</p>
+      <div class="confirm-actions">
+        <button class="btn secondary" onclick="confirmCancel()">Annuler</button>
+        <button class="btn primary" id="confirm-ok-btn" onclick="confirmOk()">Confirmer</button>
+      </div>
     </div>
   </div>
-</div>
 
+  <!-- Footer -->
+  <footer class="app-footer" id="app-footer">
+    <span class="footer-version">Nexora · v0.2</span>
+    <a onclick="showInfoModal('support')">Support</a>
+    <a onclick="showInfoModal('contact')">Contact</a>
+    <a onclick="showInfoModal('about')">À propos</a>
+  </footer>
+
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <script src="script.js"></script>
-<footer class="app-footer" id="app-footer">
-  <span class="footer-version">Nexora · v0.2</span>
-  <a onclick="showInfoModal('support')">Support</a>
-  <a onclick="showInfoModal('contact')">Contact</a>
-  <a onclick="showInfoModal('about')">À propos</a>
-</footer>
-  
+
 </body>
 </html>
-
