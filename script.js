@@ -1364,6 +1364,8 @@ function isIOS() {
 let deferredInstallPrompt = null;
 
 // Enregistrement du service worker
+let waitingWorker = null;
+
 if ("serviceWorker" in navigator) {
   let swRefreshing = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
@@ -1371,12 +1373,53 @@ if ("serviceWorker" in navigator) {
     swRefreshing = true;
     window.location.reload();
   });
+
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js")
-      .then((reg) => console.log("SW registered:", reg.scope))
-      .catch((err) => console.error("SW registration failed:", err));
+    navigator.serviceWorker.register("/sw.js").then((reg) => {
+      console.log("SW registered:", reg.scope);
+
+      // SW déjà en attente au chargement (cas où l'user revient sans avoir update)
+      if (reg.waiting && navigator.serviceWorker.controller) {
+        waitingWorker = reg.waiting;
+        showUpdateBanner();
+      }
+
+      // Détection d'une nouvelle version qui s'installe
+      reg.addEventListener("updatefound", () => {
+        const newSW = reg.installing;
+        if (!newSW) return;
+        newSW.addEventListener("statechange", () => {
+          if (newSW.state === "installed" && navigator.serviceWorker.controller) {
+            waitingWorker = newSW;
+            showUpdateBanner();
+          }
+        });
+      });
+
+      // Vérifie les maj toutes les 30 min tant que l'app est ouverte
+      setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
+    }).catch((err) => console.error("SW registration failed:", err));
   });
 }
+
+function showUpdateBanner() {
+  const banner = document.getElementById("update-banner");
+  if (banner) banner.classList.add("visible");
+}
+
+window.dismissUpdateBanner = function() {
+  const banner = document.getElementById("update-banner");
+  if (banner) banner.classList.remove("visible");
+};
+
+window.applyUpdate = function() {
+  if (waitingWorker) {
+    waitingWorker.postMessage({ type: "SKIP_WAITING" });
+    // controllerchange déclenche le reload automatiquement après
+  } else {
+    window.location.reload();
+  }
+};
 
 // Capture du prompt natif (Chrome / Android / Edge)
 window.addEventListener("beforeinstallprompt", (e) => {
