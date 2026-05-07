@@ -51,10 +51,12 @@ function updateUI() {
   const loggedIn = document.getElementById("auth-buttons-logged-in");
   const appView = document.getElementById("app-view");
   const landingView = document.getElementById("landing-view");
+  const headerInner = document.querySelector(".header-inner");
 
   if (currentUser) {
     document.body.classList.remove("logged-out");
     if (loggedIn) loggedIn.style.display = "flex";
+    if (headerInner) headerInner.style.justifyContent = "space-between";
     appView.style.display = "block";
     landingView.style.display = "none";
     updateAvatarUI();
@@ -63,6 +65,7 @@ function updateUI() {
   } else {
     document.body.classList.add("logged-out");
     if (loggedIn) loggedIn.style.display = "none";
+    if (headerInner) headerInner.style.justifyContent = "center";
     appView.style.display = "none";
     landingView.style.display = "block";
   }
