@@ -1400,7 +1400,6 @@ function refreshInstallButtonVisibility() {
   btn.style.display = deferredInstallPrompt ? "block" : "none";
 }
 
-// Click sur "Installer l'app"
 window.installApp = async function() {
   // Ferme le menu ⋯
   const menu = document.getElementById("more-dropdown");
@@ -1412,16 +1411,28 @@ window.installApp = async function() {
     return;
   }
 
-  // Prompt natif disponible
-  if (deferredInstallPrompt) {
-    deferredInstallPrompt.prompt();
-    const { outcome } = await deferredInstallPrompt.userChoice;
-    console.log("Install outcome:", outcome);
-    deferredInstallPrompt = null;
-    refreshInstallButtonVisibility();
+  // Pas de prompt natif dispo → fallback iOS-style instructions
+  if (!deferredInstallPrompt) {
+    showInfoModal("install-ios");
     return;
   }
 
+  // ✨ Confirmation custom dans notre style avant le prompt natif
+  const confirmed = await showConfirm({
+    icon: "📲",
+    title: "Installer Nexora",
+    message: "Lance Nexora comme une vraie app native, avec son icône sur ton bureau et un fonctionnement même sans navigateur ouvert.",
+    confirmText: "Installer"
+  });
+  if (!confirmed) return;
+
+  // Déclenche le prompt natif (obligatoire pour l'install)
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  console.log("Install outcome:", outcome);
+  deferredInstallPrompt = null;
+  refreshInstallButtonVisibility();
+};
   // Fallback (rare)
   showInfoModal("install-ios");
 };
