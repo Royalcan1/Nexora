@@ -1178,6 +1178,12 @@ let deferredInstallPrompt = null;
 
 // Enregistrement du service worker
 if ("serviceWorker" in navigator) {
+  let swRefreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (swRefreshing) return;
+    swRefreshing = true;
+    window.location.reload();
+  });
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js")
       .then((reg) => console.log("SW registered:", reg.scope))
