@@ -13,7 +13,14 @@ const SHELL = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(SHELL)));
-  self.skipWaiting();
+  // Pas de skipWaiting auto : on attend que l'utilisateur clique sur "Mettre à jour"
+});
+
+// Le client peut nous demander de prendre le contrôle immédiatement
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("activate", (event) => {
