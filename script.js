@@ -1374,9 +1374,6 @@ async function resetAvatar() {
 function setAvatarTab(name) {
   currentAvatarTab = name;
   const body = document.getElementById("info-modal-body");
-  if (body) body.innerHTML = renderAvatarGridOnly();
-  // Met à jour visuellement les onglets sans tout reconstruire (preserve focus)
-  // → on rebuild quand même tout pour rester simple
   if (body) body.innerHTML = renderAvatar();
 }
 
