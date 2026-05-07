@@ -747,17 +747,45 @@ async function fireReminder() {
 }
 
 async function testNotification() {
+  console.log("=== TEST NOTIFICATION ===");
+  console.log("Notification.permission:", typeof Notification !== "undefined" ? Notification.permission : "unsupported");
+
   const perm = await requestNotifPermission();
+  console.log("Permission après demande :", perm);
+
   if (perm !== "granted") {
     showConfirm({
       icon: "🚫",
       title: "Permission refusée",
-      message: "Pour recevoir des notifications, autorise-les dans les réglages de ton navigateur ou de ton téléphone.",
+      message: perm === "unsupported"
+        ? "Ton navigateur ne supporte pas les notifications. Sur iPhone : iOS 16.4+ + app installée requis."
+        : "Autorise les notifications dans les réglages de ton navigateur ou de ton téléphone.",
       confirmText: "OK"
     });
     return;
   }
-  await fireReminder();
+
+  // Notification test indépendante (marche même sans tâches en cours)
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    console.log("SW ready, on envoie la notif...");
+    await reg.showNotification("📚 Nexora", {
+      body: "Test réussi ! 🎉 Tes rappels sont prêts.",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      tag: "nexora-test",
+      vibrate: [100, 50, 100]
+    });
+    console.log("✅ Notification envoyée");
+  } catch (e) {
+    console.error("❌ Erreur notif :", e);
+    showConfirm({
+      icon: "⚠️",
+      title: "Erreur d'envoi",
+      message: "Une erreur est survenue. Détails dans la console (F12).",
+      confirmText: "OK"
+    });
+  }
 }
 
 async function toggleNotifEnabled(checkbox) {
