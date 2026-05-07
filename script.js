@@ -673,31 +673,6 @@ function updateHero() {
   }
 }
 
-function addSuggestion(text) {
-  const input = document.getElementById("input");
-  const current = input.value.trim();
-  if (current) {
-    input.value = current + " + " + text;
-  } else {
-    input.value = text;
-  }
-  input.focus();
-  input.setSelectionRange(input.value.length, input.value.length);
-}
-
-// Atténuation des chips quand l'utilisateur tape
-document.addEventListener("DOMContentLoaded", () => {
-  const input = document.getElementById("input");
-  if (input) {
-    input.addEventListener("input", () => {
-      const chips = document.getElementById("suggestion-chips");
-      if (!chips) return;
-      if (input.value.trim()) chips.classList.add("dim");
-      else chips.classList.remove("dim");
-    });
-  }
-});
-
 // ==========================================
 //  🔔 NOTIFICATIONS
 // ==========================================
