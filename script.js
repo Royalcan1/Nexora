@@ -114,6 +114,8 @@ function updateAuthModalUI() {
     switchText.textContent = "Déjà un compte ?";
     switchLink.textContent = "Se connecter";
   }
+  // 🆕 Champs nom/prénom uniquement en signup
+  document.getElementById("auth-name-fields").style.display = authMode === "login" ? "none" : "block";
 }
 
 async function submitAuth() {
