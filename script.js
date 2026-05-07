@@ -14,6 +14,8 @@ let tasks = [];
 let currentUser = null;
 let authMode = "login";
 let isPasswordRecovery = false;
+let editingCatIndex = null; // index de la catégorie en cours d'édition (null si aucune)
+let isAddingCat = false;     // true si on ajoute une nouvelle catégorie
 
 console.log("JS CHARGE OK");
 
@@ -78,7 +80,6 @@ function showAuthModal(mode) {
   document.getElementById("auth-error").style.color = "";
   document.getElementById("auth-email").value = "";
   document.getElementById("auth-password").value = "";
-  // 🆕 Reset des champs nom/prénom
   const fn = document.getElementById("auth-firstname");
   const ln = document.getElementById("auth-lastname");
   if (fn) fn.value = "";
@@ -120,7 +121,6 @@ function updateAuthModalUI() {
     switchText.textContent = "Déjà un compte ?";
     switchLink.textContent = "Se connecter";
   }
-  // 🆕 Champs nom/prénom uniquement en signup
   const nameFields = document.getElementById("auth-name-fields");
   if (nameFields) nameFields.style.display = authMode === "login" ? "none" : "block";
 }
@@ -143,7 +143,6 @@ async function submitAuth() {
 
   try {
     if (authMode === "signup") {
-      // 🆕 Récupère et valide le prénom
       const firstName = document.getElementById("auth-firstname").value.trim();
       const lastName = document.getElementById("auth-lastname").value.trim();
       if (!firstName) {
@@ -250,6 +249,244 @@ async function submitNewPassword() {
 }
 
 // ==========================================
+//  🎨 CATÉGORIES / MATIÈRES
+// ==========================================
+
+const DEFAULT_CATEGORIES = [
+  { name: "Maths", color: "#3b82f6", icon: "📐", keywords: ["maths","math","mathématique","mathematique","mathématiques","mathematiques","algèbre","algebre","géométrie","geometrie","calcul","fonction","équation","equation","fractions","statistiques","statistique"] },
+  { name: "Français", color: "#ef4444", icon: "📖", keywords: ["français","francais","dissertation","littérature","litterature","roman","poésie","poesie","commentaire de texte","grammaire","conjugaison","orthographe"] },
+  { name: "Histoire-Géo", color: "#f59e0b", icon: "🗺️", keywords: ["histoire","géo","geo","géographie","geographie","géopolitique","geopolitique","hist-géo","hist","révolution","revolution","seconde guerre","première guerre","premiere guerre"] },
+  { name: "SVT", color: "#22c55e", icon: "🌱", keywords: ["svt","biologie","bio","sciences nature","écologie","ecologie","génétique","genetique","cellule","adn","géologie","geologie"] },
+  { name: "Anglais", color: "#a855f7", icon: "🇬🇧", keywords: ["anglais","english","ang"] },
+  { name: "Physique-Chimie", color: "#06b6d4", icon: "⚗️", keywords: ["physique","chimie","phys","physique-chimie","mécanique","mecanique","électricité","electricite","atome","molécule","molecule","réaction","reaction"] },
+  { name: "Espagnol", color: "#f97316", icon: "🇪🇸", keywords: ["espagnol","esp","español","espanol","spanish"] },
+  { name: "Philo", color: "#6b7280", icon: "💭", keywords: ["philo","philosophie","dissertation philo"] },
+  { name: "EPS", color: "#ec4899", icon: "⚽", keywords: ["eps","sport","gym","gymnastique","course","natation","muscul","football","basket","tennis"] }
+];
+
+const COLOR_PALETTE = [
+  "#3b82f6", "#ef4444", "#f59e0b", "#22c55e",
+  "#a855f7", "#06b6d4", "#f97316", "#ec4899",
+  "#6b7280", "#14b8a6", "#84cc16", "#0ea5e9"
+];
+
+const ICON_PALETTE = [
+  "📐", "📖", "🗺️", "🌱", "🇬🇧", "⚗️",
+  "🇪🇸", "💭", "⚽", "🎨", "🎵", "💻",
+  "📚", "🔬", "⚖️", "🌍", "🧠", "✏️"
+];
+
+function getCategories() {
+  return currentUser?.user_metadata?.categories || DEFAULT_CATEGORIES;
+}
+
+function getCategoryByName(name) {
+  if (!name) return null;
+  const cats = getCategories();
+  return cats.find(c => c.name.toLowerCase() === name.toLowerCase()) || null;
+}
+
+function detectCategory(text) {
+  if (!text) return null;
+  const lower = text.toLowerCase();
+  const cats = getCategories();
+  for (const cat of cats) {
+    for (const kw of (cat.keywords || [])) {
+      const re = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      if (re.test(lower)) return cat.name;
+    }
+  }
+  return null;
+}
+
+async function saveCategories(cats) {
+  const { error } = await db.auth.updateUser({ data: { categories: cats } });
+  if (error) { console.error("CAT SAVE ERROR =", error); return false; }
+  if (currentUser) {
+    currentUser.user_metadata = { ...(currentUser.user_metadata || {}), categories: cats };
+  }
+  return true;
+}
+
+async function startEditCategory(index) {
+  editingCatIndex = index;
+  isAddingCat = false;
+  const body = document.getElementById("info-modal-body");
+  if (body) body.innerHTML = renderCategories();
+}
+
+async function startAddCategory() {
+  isAddingCat = true;
+  editingCatIndex = null;
+  const body = document.getElementById("info-modal-body");
+  if (body) body.innerHTML = renderCategories();
+}
+
+function cancelEditCategory() {
+  editingCatIndex = null;
+  isAddingCat = false;
+  const body = document.getElementById("info-modal-body");
+  if (body) body.innerHTML = renderCategories();
+}
+
+async function saveEditCategory() {
+  const nameEl = document.getElementById("cat-edit-name");
+  if (!nameEl) return;
+  const name = nameEl.value.trim();
+  if (!name) {
+    nameEl.style.borderColor = "#ef4444";
+    return;
+  }
+  const selectedColor = document.querySelector(".cat-color-cell.selected")?.dataset.color || COLOR_PALETTE[0];
+  const selectedIcon = document.querySelector(".cat-icon-cell.selected")?.dataset.icon || "📚";
+
+  const cats = [...getCategories()];
+
+  if (isAddingCat) {
+    cats.push({ name, color: selectedColor, icon: selectedIcon, keywords: [name.toLowerCase()] });
+  } else if (editingCatIndex !== null) {
+    cats[editingCatIndex] = {
+      ...cats[editingCatIndex],
+      name,
+      color: selectedColor,
+      icon: selectedIcon
+    };
+  }
+
+  await saveCategories(cats);
+  editingCatIndex = null;
+  isAddingCat = false;
+  render(); // refresh tasks (badges might change)
+  const body = document.getElementById("info-modal-body");
+  if (body) body.innerHTML = renderCategories();
+}
+
+async function deleteCategory(index) {
+  const cats = [...getCategories()];
+  const cat = cats[index];
+  if (!cat) return;
+
+  const confirmed = await showConfirm({
+    icon: "🗑️",
+    title: `Supprimer "${cat.name}"`,
+    message: `La matière sera retirée de tes tâches existantes (qui resteront, juste sans matière).`,
+    confirmText: "Supprimer",
+    danger: true
+  });
+  if (!confirmed) return;
+
+  cats.splice(index, 1);
+  await saveCategories(cats);
+
+  // Retire la catégorie des tâches en BDD
+  const tasksWithCat = tasks.filter(t => t.category === cat.name);
+  if (tasksWithCat.length > 0) {
+    const ids = tasksWithCat.map(t => t.id);
+    await db.from("tasks").update({ category: null }).in("id", ids);
+    await loadTasks();
+  } else {
+    render();
+  }
+
+  const body = document.getElementById("info-modal-body");
+  if (body) body.innerHTML = renderCategories();
+}
+
+async function resetCategories() {
+  const confirmed = await showConfirm({
+    icon: "🔄",
+    title: "Réinitialiser les matières",
+    message: "Tes matières seront remplacées par les 9 matières par défaut. Les tâches existantes garderont leurs catégories actuelles si elles existent encore.",
+    confirmText: "Réinitialiser",
+    danger: true
+  });
+  if (!confirmed) return;
+
+  await saveCategories(DEFAULT_CATEGORIES);
+  editingCatIndex = null;
+  isAddingCat = false;
+  render();
+  const body = document.getElementById("info-modal-body");
+  if (body) body.innerHTML = renderCategories();
+}
+
+function renderCategories() {
+  const cats = getCategories();
+
+  // Mode édition / ajout
+  if (editingCatIndex !== null || isAddingCat) {
+    const cat = isAddingCat
+      ? { name: "", color: COLOR_PALETTE[0], icon: "📚" }
+      : cats[editingCatIndex];
+
+    const colorCells = COLOR_PALETTE.map(c => `
+      <div class="cat-color-cell ${c === cat.color ? 'selected' : ''}" style="background:${c}" data-color="${c}" onclick="selectCatColor('${c}')"></div>
+    `).join("");
+
+    const iconCells = ICON_PALETTE.map(i => `
+      <div class="cat-icon-cell ${i === cat.icon ? 'selected' : ''}" data-icon="${i}" onclick="selectCatIcon('${i}')">${i}</div>
+    `).join("");
+
+    return `
+      <h2>🎨 ${isAddingCat ? "Nouvelle matière" : "Modifier la matière"}</h2>
+      <p class="info-subtitle">Personnalise ta matière comme tu veux</p>
+
+      <div class="cat-edit-form">
+        <div class="cat-edit-form-title">Nom</div>
+        <input type="text" id="cat-edit-name" class="cat-edit-input" placeholder="Ex: Anglais, Maths..." maxlength="30" value="${cat.name.replace(/"/g, '&quot;')}">
+
+        <div class="cat-edit-form-title">Couleur</div>
+        <div class="cat-color-picker">${colorCells}</div>
+
+        <div class="cat-edit-form-title">Icône</div>
+        <div class="cat-icon-picker">${iconCells}</div>
+
+        <div class="cat-edit-actions">
+          <button class="btn secondary" onclick="cancelEditCategory()">Annuler</button>
+          <button class="btn primary" onclick="saveEditCategory()">${isAddingCat ? "Ajouter" : "Enregistrer"}</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Mode liste
+  const rows = cats.map((c, i) => `
+    <div class="cat-row">
+      <div class="cat-row-icon">${c.icon || "📚"}</div>
+      <div class="cat-row-color" style="background:${c.color}"></div>
+      <div class="cat-row-name">${c.name}</div>
+      <div class="cat-row-actions">
+        <button class="cat-icon-btn" onclick="startEditCategory(${i})" title="Modifier">✏️</button>
+        <button class="cat-icon-btn danger" onclick="deleteCategory(${i})" title="Supprimer">🗑️</button>
+      </div>
+    </div>
+  `).join("");
+
+  return `
+    <h2>🎨 Mes matières</h2>
+    <p class="info-subtitle">Tes tâches sont automatiquement classées dans ces matières</p>
+
+    <div class="cat-list">${rows}</div>
+
+    <button class="cat-add-btn" onclick="startAddCategory()">+ Ajouter une matière</button>
+
+    <button class="cat-reset-link" onclick="resetCategories()">↻ Réinitialiser aux matières par défaut</button>
+  `;
+}
+
+function selectCatColor(color) {
+  document.querySelectorAll(".cat-color-cell").forEach(c => c.classList.remove("selected"));
+  document.querySelectorAll(`.cat-color-cell[data-color="${color}"]`).forEach(c => c.classList.add("selected"));
+}
+
+function selectCatIcon(icon) {
+  document.querySelectorAll(".cat-icon-cell").forEach(c => c.classList.remove("selected"));
+  document.querySelectorAll(".cat-icon-cell").forEach(c => {
+    if (c.dataset.icon === icon) c.classList.add("selected");
+  });
+}
+
+// ==========================================
 //  TÂCHES — CRUD
 // ==========================================
 
@@ -263,6 +500,7 @@ async function addTask() {
     text: t,
     priority: getPriority(t),
     time: getTime(t),
+    category: detectCategory(t), // 🆕 catégorie auto-détectée
     done: false,
     user_id: currentUser.id
   }));
@@ -342,7 +580,8 @@ window.editTask = async function(id, newText) {
     .update({
       text: newText,
       priority: getPriority(newText),
-      time: getTime(newText)
+      time: getTime(newText),
+      category: detectCategory(newText) // 🆕 re-détecte la catégorie
     })
     .eq("id", id)
     .select();
@@ -387,7 +626,6 @@ function render() {
   let active = tasks.filter(t => !t.done).sort((a, b) => ({ urgent: 0, medium: 1, normal: 2 }[a.priority] - { urgent: 0, medium: 1, normal: 2 }[b.priority]));
   let done = tasks.filter(t => t.done);
 
-  // Empty state global : aucune tâche du tout
   if (active.length === 0 && done.length === 0) {
     document.getElementById("output").innerHTML = `
       <div class="empty-state-big">
@@ -416,6 +654,13 @@ function render() {
       const safeText = t.text.replace(/"/g, "&quot;");
       const due = getDueDate(t.text);
       const dueBadge = due ? `<span class="due-badge ${due.urgency}">${due.label}</span>` : '';
+
+      // 🆕 Badge catégorie
+      const cat = t.category ? getCategoryByName(t.category) : null;
+      const catBadge = cat
+        ? `<span class="cat-badge" style="background:${cat.color}22;color:${cat.color};border-color:${cat.color}66">${cat.icon || "📚"} ${cat.name}</span>`
+        : '';
+
       html += `<div class="task ${t.priority}" id="task-${t.id}">
         <button class="check-btn" onclick="toggleTask(${t.id}, ${t.done})"></button>
         <div class="task-content">
@@ -427,6 +672,7 @@ function render() {
                data-original="${safeText}"
                onkeydown="handleEditKey(event, this)"
                onblur="finishEdit(this)">${t.text}</b>
+            ${catBadge}
             ${dueBadge}
           </div>
           <div class="task-meta">priorité : ${t.priority}</div>
@@ -606,18 +852,16 @@ function confirmCancel() {
 }
 
 // ==========================================
-//  🌟 ACCUEIL PERSONNALISÉ + STATS + CHIPS
+//  🌟 ACCUEIL PERSONNALISÉ + STATS
 // ==========================================
 
 function getDisplayName() {
   if (!currentUser) return "toi";
-  // 🆕 Priorité : first_name défini par l'utilisateur
   const fn = currentUser.user_metadata?.first_name;
   if (fn && fn.trim()) {
     const trimmed = fn.trim();
     return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
   }
-  // Fallback : extrait depuis l'email (pour anciens users sans prénom)
   if (!currentUser.email) return "toi";
   const prefix = currentUser.email.split("@")[0];
   const firstPart = prefix.split(/[._-]/)[0];
@@ -900,7 +1144,6 @@ const COMPLETION_MESSAGES = [
 
 function showCompletionToast() {
   const msg = COMPLETION_MESSAGES[Math.floor(Math.random() * COMPLETION_MESSAGES.length)];
-
   const existing = document.getElementById("completion-toast");
   if (existing) existing.remove();
 
@@ -912,9 +1155,7 @@ function showCompletionToast() {
     <div class="completion-toast-subtitle">${msg.subtitle}</div>
   `;
   document.body.appendChild(toast);
-
   requestAnimationFrame(() => toast.classList.add("show"));
-
   setTimeout(() => {
     toast.classList.remove("show");
     setTimeout(() => toast.remove(), 400);
@@ -977,7 +1218,7 @@ function finishEdit(el) {
 }
 
 // ==========================================
-//  📊 MODALS INFO (Profil / Dashboard / Support / Contact / À propos)
+//  📊 MODALS INFO
 // ==========================================
 
 const CONTACT_EMAIL = "nexora.app@proton.me";
@@ -989,6 +1230,12 @@ function showInfoModal(type) {
   if (menu) {
     menu.classList.remove("open");
     menu.classList.add("closed");
+  }
+
+  // Reset cat editing state when opening categories
+  if (type === "categories") {
+    editingCatIndex = null;
+    isAddingCat = false;
   }
 
   const body = document.getElementById("info-modal-body");
@@ -1008,6 +1255,7 @@ function hideInfoModal() {
 function renderInfoModalContent(type) {
   if (type === "notifications") return renderNotifications();
   if (type === "avatar") return renderAvatar();
+  if (type === "categories") return renderCategories();
   if (type === "dashboard") return renderDashboard();
   if (type === "support") return renderSupport();
   if (type === "contact") return renderContact();
@@ -1043,29 +1291,15 @@ function renderDashboard() {
     <p class="info-subtitle">Tes statistiques en direct</p>
 
     <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-value">${active}</div>
-        <div class="stat-label">En cours</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${done}</div>
-        <div class="stat-label">Terminées</div>
-      </div>
-      <div class="stat-card accent">
-        <div class="stat-value">${completion}%</div>
-        <div class="stat-label">Complétion</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${total}</div>
-        <div class="stat-label">Total</div>
-      </div>
+      <div class="stat-card"><div class="stat-value">${active}</div><div class="stat-label">En cours</div></div>
+      <div class="stat-card"><div class="stat-value">${done}</div><div class="stat-label">Terminées</div></div>
+      <div class="stat-card accent"><div class="stat-value">${completion}%</div><div class="stat-label">Complétion</div></div>
+      <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Total</div></div>
     </div>
 
     <div class="info-section">
       <h3>Répartition des tâches en cours</h3>
-      ${active === 0 ? `
-        <p style="opacity:0.6;font-size:13px;">Aucune tâche en cours 🎉</p>
-      ` : `
+      ${active === 0 ? `<p style="opacity:0.6;font-size:13px;">Aucune tâche en cours 🎉</p>` : `
         <div class="priority-bars">
           <div class="priority-bar-row">
             <div class="priority-bar-label"><span class="priority-dot urgent"></span>Urgent</div>
@@ -1101,11 +1335,11 @@ function renderSupport() {
 
     <div class="info-section">
       <h3>Détection automatique</h3>
-      <p>Nexora analyse le texte pour deviner la priorité et le temps estimé. Quelques mots-clés reconnus :</p>
+      <p>Nexora analyse le texte pour deviner la priorité, la matière et l'échéance.</p>
       <ul>
         <li><b>Urgent</b> : examen, contrôle, oral, demain, urgent…</li>
         <li><b>Medium</b> : DM, devoir, projet, révision, lundi…</li>
-        <li><b>Normal</b> : tout le reste</li>
+        <li><b>Matières</b> : maths, français, histoire, SVT, anglais…</li>
       </ul>
     </div>
 
@@ -1119,8 +1353,8 @@ function renderSupport() {
     </div>
 
     <div class="info-section">
-      <h3>Supprimer / archiver</h3>
-      <p>Coche une tâche pour la passer en <i>terminées</i>. Utilise le bouton <b>🗑️ Vider</b> pour tout nettoyer d'un coup.</p>
+      <h3>Personnaliser</h3>
+      <p>Va dans <b>🎨 Mes matières</b> pour ajouter, renommer ou recolorer les matières détectées.</p>
     </div>
 
     <div class="info-section">
@@ -1136,18 +1370,14 @@ function renderContact() {
   return `
     <h2>📩 Contact</h2>
     <p class="info-subtitle">Une question, un bug, une suggestion ? On est à l'écoute.</p>
-
     <div class="contact-card">
       <div style="font-size:13px;opacity:0.7;margin-bottom:6px;">Notre adresse email</div>
       <div class="contact-email">${CONTACT_EMAIL}</div>
     </div>
-
     <a class="btn-mailto" href="mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}">✉️ Envoyer un email</a>
-
     <div class="info-section" style="margin-top:20px;">
       <p style="font-size:13px;opacity:0.6;text-align:center;">
-        On répond généralement sous 48h.<br>
-        Tu peux aussi simplement copier l'adresse ci-dessus.
+        On répond généralement sous 48h.<br>Tu peux aussi simplement copier l'adresse ci-dessus.
       </p>
     </div>
   `;
@@ -1158,7 +1388,6 @@ function renderAbout() {
   return `
     <h2>ℹ️ À propos</h2>
     <p class="info-subtitle">L'app de gestion de tâches pour les étudiants</p>
-
     <div class="info-section">
       <p class="about-tagline">
         <b>Nexora</b> est née d'un constat simple : les étudiants jonglent avec
@@ -1170,17 +1399,14 @@ function renderAbout() {
         Nexora s'occupe de prioriser. Tu coches quand c'est fini. C'est tout.
       </p>
     </div>
-
     <div class="info-section">
       <h3>Créateur</h3>
       <p>Imaginé et développé par <b>${CREATOR_NAME}</b>, étudiant et passionné de productivité.</p>
     </div>
-
     <div class="info-section">
       <h3>Vie privée</h3>
       <p>Tes tâches t'appartiennent. Elles sont stockées de façon sécurisée et personne d'autre que toi ne peut y accéder.</p>
     </div>
-
     <div class="about-meta">
       <span>Version ${APP_VERSION}</span>
       <span>© ${year} Nexora</span>
@@ -1193,7 +1419,6 @@ function renderInstallIOS() {
   return `
     <h2>📲 Installer Nexora</h2>
     <p class="info-subtitle">Sur iPhone / iPad, en 3 étapes</p>
-
     <div class="install-step">
       <div class="install-step-num">1</div>
       <div class="install-step-text">Appuie sur le bouton <b>Partager</b>
@@ -1207,7 +1432,6 @@ function renderInstallIOS() {
       <div class="install-step-num">3</div>
       <div class="install-step-text">Appuie sur <b>Ajouter</b> en haut à droite</div>
     </div>
-
     <div class="info-section" style="margin-top:20px;">
       <p style="font-size:13px;opacity:0.6;text-align:center;">
         L'icône Nexora apparaîtra avec tes autres apps.<br>
@@ -1253,16 +1477,12 @@ document.addEventListener("click", (e) => {
     profileMenu.classList.add("closed");
   }
 
-  // Fermeture des modals en cliquant sur le backdrop
   const authModal = document.getElementById("auth-modal");
   if (e.target === authModal) hideAuthModal();
-
   const infoModal = document.getElementById("info-modal");
   if (e.target === infoModal) hideInfoModal();
-
   const resetModal = document.getElementById("reset-modal");
   if (e.target === resetModal) hideResetModal();
-
   const confirmModal = document.getElementById("confirm-modal");
   if (e.target === confirmModal) confirmCancel();
 });
@@ -1290,7 +1510,6 @@ function getCurrentAvatar() {
 }
 
 function getAvatarFallback() {
-  // 🆕 Initiale du prénom si défini, sinon de l'email
   const fn = currentUser?.user_metadata?.first_name;
   if (fn && fn.trim()) return fn.trim().charAt(0).toUpperCase();
   return (currentUser?.email || "?").charAt(0).toUpperCase();
@@ -1352,7 +1571,6 @@ function setAvatarTab(name) {
   if (body) body.innerHTML = renderAvatar();
 }
 
-// 🆕 Sauvegarde du nom/prénom depuis la modal Profil
 async function saveProfileName() {
   const firstNameEl = document.getElementById("profile-firstname");
   const lastNameEl = document.getElementById("profile-lastname");
@@ -1361,7 +1579,6 @@ async function saveProfileName() {
   const firstName = firstNameEl.value.trim();
   const lastName = lastNameEl.value.trim();
 
-  // Pas de save si rien n'a changé
   const currentFn = currentUser?.user_metadata?.first_name || "";
   const currentLn = currentUser?.user_metadata?.last_name || "";
   if (firstName === currentFn && lastName === currentLn) return;
@@ -1379,7 +1596,6 @@ async function saveProfileName() {
     };
   }
 
-  // Rafraîchit le greeting et l'avatar fallback immédiatement
   updateHero();
   updateAvatarUI();
   console.log("✅ Profil mis à jour :", firstName, lastName);
@@ -1507,10 +1723,8 @@ window.addEventListener("beforeinstallprompt", (e) => {
 function refreshInstallButtonVisibility() {
   const btn = document.getElementById("install-menu-item");
   if (!btn) return;
-
   if (isStandalonePWA()) { btn.style.display = "none"; return; }
   if (isIOS()) { btn.style.display = "block"; return; }
-
   btn.style.display = deferredInstallPrompt ? "block" : "none";
 }
 
@@ -1518,15 +1732,8 @@ window.installApp = async function() {
   const menu = document.getElementById("more-dropdown");
   if (menu) { menu.classList.remove("open"); menu.classList.add("closed"); }
 
-  if (isIOS()) {
-    showInfoModal("install-ios");
-    return;
-  }
-
-  if (!deferredInstallPrompt) {
-    showInfoModal("install-ios");
-    return;
-  }
+  if (isIOS()) { showInfoModal("install-ios"); return; }
+  if (!deferredInstallPrompt) { showInfoModal("install-ios"); return; }
 
   const confirmed = await showConfirm({
     icon: "📲",
