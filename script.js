@@ -58,6 +58,7 @@ function updateUI() {
     landingView.style.display = "none";
     updateAvatarUI();
     updateHero();
+    scheduleTodayNotifications();
   } else {
     loggedOut.style.display = "flex";
     loggedIn.style.display = "none";
@@ -974,6 +975,7 @@ function hideInfoModal() {
 }
 
 function renderInfoModalContent(type) {
+  if (type === "notifications") return renderNotifications();
   if (type === "avatar") return renderAvatar();
   if (type === "dashboard") return renderDashboard();
   if (type === "support") return renderSupport();
