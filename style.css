@@ -858,7 +858,7 @@ body { padding-bottom: 100px !important; }
   align-items: center;
 }
 
-/* Halo bleu subtil derrière le hero pour combler le vide */
+/* Halo bleu subtil derrière le hero */
 .landing-view::before {
   content: "";
   position: absolute;
