@@ -69,6 +69,7 @@
             <div class="more-item install-item" id="install-menu-item" onclick="installApp()" style="display:none;">📲 Installer l'app</div>
             <div class="more-item" onclick="showInfoModal('avatar')">👤 Mon profil</div>
             <div class="more-item" onclick="showInfoModal('categories')">🎨 Mes matières</div>
+            <div class="more-item" onclick="showInfoModal('focus')">🍅 Mode Focus</div>
             <div class="more-item" onclick="showInfoModal('notifications')">🔔 Notifications</div>
             <div class="more-item" onclick="showInfoModal('dashboard')">📊 Dashboard</div>
             <div class="more-item" onclick="showInfoModal('support')">💬 Support</div>
@@ -204,5 +205,23 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <script src="script.js"></script>
 
+<!-- 🍅 Overlay Mode Focus (plein écran pendant une session) -->
+<div id="focus-overlay" class="focus-overlay">
+  <div class="focus-overlay-content">
+    <div class="focus-status" id="focus-status">Focus en cours</div>
+    <div class="focus-task-name" id="focus-task-name"></div>
+    <div class="focus-timer-wrap">
+      <div class="focus-time" id="focus-time">25:00</div>
+      <div class="focus-progress-bar"><div class="focus-progress-fill" id="focus-progress-fill"></div></div>
+    </div>
+    <div class="focus-controls">
+      <button class="focus-btn" id="focus-pause-btn" onclick="pauseFocus()">⏸ Pause</button>
+      <button class="focus-btn" id="focus-resume-btn" onclick="resumeFocus()" style="display:none;">▶ Reprendre</button>
+      <button class="focus-btn danger" onclick="stopFocus()">⏹ Arrêter</button>
+    </div>
+    <div class="focus-tip">Mets ton téléphone en silencieux et concentre-toi 🎯</div>
+  </div>
+</div>
+  
 </body>
 </html>
