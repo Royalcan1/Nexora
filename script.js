@@ -1977,6 +1977,187 @@ function playFocusEndSound() {
 }
 
 // ==========================================
+//  🔥 STREAKS + GAMIFICATION
+// ==========================================
+
+const ACHIEVEMENTS = [
+  { id: 'first',    icon: '🌱', name: 'Premier pas',          desc: '1ère tâche terminée',  check: s => s.totalDone >= 1 },
+  { id: 'tasks10',  icon: '💪', name: 'Productif',            desc: '10 tâches faites',     check: s => s.totalDone >= 10 },
+  { id: 'streak3',  icon: '🔥', name: 'En forme',             desc: '3 jours d\'affilée',   check: s => s.bestStreak >= 3 },
+  { id: 'streak7',  icon: '⚡', name: 'Sur ma lancée',        desc: '7 jours d\'affilée',   check: s => s.bestStreak >= 7 },
+  { id: 'tasks50',  icon: '🏆', name: 'Champion',             desc: '50 tâches faites',     check: s => s.totalDone >= 50 },
+  { id: 'focus10',  icon: '🍅', name: 'Concentré',            desc: '10 sessions Focus',    check: s => s.totalFocus >= 10 },
+  { id: 'streak30', icon: '👑', name: 'Roi de la régularité', desc: '30 jours d\'affilée',  check: s => s.bestStreak >= 30 },
+  { id: 'tasks100', icon: '🎯', name: 'Centurion',            desc: '100 tâches faites',    check: s => s.totalDone >= 100 },
+];
+
+function getGamification() {
+  return currentUser?.user_metadata?.gamification || {
+    current_streak: 0, best_streak: 0,
+    last_active_date: null, total_done: 0,
+    unlocked_achievements: []
+  };
+}
+
+async function saveGamification(g) {
+  const { error } = await db.auth.updateUser({ data: { gamification: g } });
+  if (error) { console.error("GAMI SAVE ERROR =", error); return false; }
+  if (currentUser) {
+    currentUser.user_metadata = { ...(currentUser.user_metadata || {}), gamification: g };
+  }
+  return true;
+}
+
+function getStatsForAchievements() {
+  const g = getGamification();
+  const focusStats = JSON.parse(localStorage.getItem("focusStats") || "{}");
+  const totalFocus = Object.values(focusStats).reduce((a, b) => a + b, 0);
+  return {
+    totalDone: g.total_done || 0,
+    bestStreak: g.best_streak || 0,
+    currentStreak: g.current_streak || 0,
+    totalFocus
+  };
+}
+
+async function recordTaskCompletion() {
+  const today = new Date().toISOString().slice(0, 10);
+  const g = { ...getGamification() };
+
+  g.total_done = (g.total_done || 0) + 1;
+
+  const lastDate = g.last_active_date;
+  if (lastDate === today) {
+    // déjà comptabilisé aujourd'hui
+  } else if (lastDate) {
+    const diff = Math.round((new Date(today) - new Date(lastDate)) / 86400000);
+    if (diff === 1) g.current_streak = (g.current_streak || 0) + 1;
+    else if (diff > 1) g.current_streak = 1;
+  } else {
+    g.current_streak = 1;
+  }
+
+  g.last_active_date = today;
+  if ((g.current_streak || 0) > (g.best_streak || 0)) g.best_streak = g.current_streak;
+
+  // Détection nouveaux succès
+  const before = new Set(g.unlocked_achievements || []);
+  const stats = {
+    totalDone: g.total_done,
+    bestStreak: g.best_streak,
+    currentStreak: g.current_streak,
+    totalFocus: Object.values(JSON.parse(localStorage.getItem("focusStats") || "{}")).reduce((a, b) => a + b, 0)
+  };
+  const newlyUnlocked = ACHIEVEMENTS.filter(a => a.check(stats)).filter(a => !before.has(a.id));
+  g.unlocked_achievements = ACHIEVEMENTS.filter(a => a.check(stats)).map(a => a.id);
+
+  await saveGamification(g);
+  updateHero();
+
+  if (newlyUnlocked.length > 0) {
+    setTimeout(() => showAchievementToast(newlyUnlocked[0]), 600);
+  }
+}
+
+function showAchievementToast(ach) {
+  const existing = document.getElementById("achievement-toast");
+  if (existing) existing.remove();
+
+  const toast = document.createElement("div");
+  toast.id = "achievement-toast";
+  toast.className = "achievement-toast";
+  toast.innerHTML = `
+    <div class="ach-toast-icon">${ach.icon}</div>
+    <div class="ach-toast-body">
+      <div class="ach-toast-label">SUCCÈS DÉBLOQUÉ</div>
+      <div class="ach-toast-name">${ach.name}</div>
+      <div class="ach-toast-desc">${ach.desc}</div>
+    </div>
+  `;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add("show"));
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 400);
+  }, 5000);
+}
+
+// === Hook : enregistre la complétion à chaque tâche cochée ===
+const _origToggleTask = window.toggleTask;
+window.toggleTask = async function(id, currentDone) {
+  await _origToggleTask(id, currentDone);
+  if (!currentDone) {
+    // La tâche vient d'être cochée
+    await recordTaskCompletion();
+  }
+};
+
+// === Override updateHero pour afficher le streak ===
+const _origUpdateHero = updateHero;
+updateHero = function() {
+  _origUpdateHero();
+  const pillsEl = document.getElementById("stats-pills");
+  if (!pillsEl || !currentUser) return;
+  const g = getGamification();
+  const streak = g.current_streak || 0;
+  if (streak > 0 && tasks.length > 0) {
+    pillsEl.innerHTML += `<span class="stat-pill streak"><span class="stat-pill-icon">🔥</span>${streak} jour${streak > 1 ? 's' : ''}</span>`;
+  }
+};
+
+// === Override renderDashboard pour ajouter Streak + Succès ===
+const _origRenderDashboard = renderDashboard;
+renderDashboard = function() {
+  const original = _origRenderDashboard();
+  const stats = getStatsForAchievements();
+
+  const achievementCells = ACHIEVEMENTS.map(a => {
+    const unlocked = a.check(stats);
+    return `
+      <div class="ach-cell ${unlocked ? 'unlocked' : 'locked'}" title="${a.desc}">
+        <div class="ach-icon">${a.icon}</div>
+        <div class="ach-name">${a.name}</div>
+        <div class="ach-desc">${a.desc}</div>
+      </div>
+    `;
+  }).join("");
+
+  const unlockedCount = ACHIEVEMENTS.filter(a => a.check(stats)).length;
+
+  const gamificationHtml = `
+    <div class="info-section">
+      <h3>🔥 Streak</h3>
+      <div class="streak-grid">
+        <div class="streak-card current">
+          <div class="streak-value">${stats.currentStreak}</div>
+          <div class="streak-label">Jour${stats.currentStreak > 1 ? 's' : ''} d'affilée</div>
+        </div>
+        <div class="streak-card best">
+          <div class="streak-value">${stats.bestStreak}</div>
+          <div class="streak-label">Record</div>
+        </div>
+      </div>
+      ${stats.currentStreak === 0 ? `<p style="font-size:12px;opacity:0.55;margin-top:10px;text-align:center;">Termine une tâche aujourd'hui pour démarrer ta série 🔥</p>` : ''}
+    </div>
+
+    <div class="info-section">
+      <h3>🏆 Succès (${unlockedCount}/${ACHIEVEMENTS.length})</h3>
+      <div class="ach-grid">${achievementCells}</div>
+    </div>
+
+    <div class="info-section">
+      <h3>📈 Lifetime</h3>
+      <div class="lifetime-stats">
+        <div><b>${stats.totalDone}</b>tâches terminées</div>
+        <div><b>${stats.totalFocus}</b>sessions Focus</div>
+      </div>
+    </div>
+  `;
+
+  return original + gamificationHtml;
+};
+
+// ==========================================
 //  GO
 // ==========================================
 initAuth();
