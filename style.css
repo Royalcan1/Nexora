@@ -676,3 +676,5 @@ body { padding-bottom: 100px !important; }
   0%, 100% { opacity: 0.5; }
   50% { opacity: 0.3; }
 }
+/* Fix : la modal de confirmation doit passer au-dessus de l'overlay focus */
+#confirm-modal { z-index: 11000; }
