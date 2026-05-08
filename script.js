@@ -1258,6 +1258,7 @@ function renderInfoModalContent(type) {
   if (type === "notifications") return renderNotifications();
   if (type === "avatar") return renderAvatar();
   if (type === "categories") return renderCategories();
+  if (type === "focus") return renderFocusStarter();
   if (type === "dashboard") return renderDashboard();
   if (type === "support") return renderSupport();
   if (type === "contact") return renderContact();
@@ -1759,6 +1760,221 @@ window.addEventListener("appinstalled", () => {
 });
 
 document.addEventListener("DOMContentLoaded", refreshInstallButtonVisibility);
+
+// ==========================================
+//  🍅 MODE FOCUS / POMODORO
+// ==========================================
+
+let focusState = {
+  active: false,
+  paused: false,
+  taskId: null,
+  taskText: null,
+  durationMin: 25,
+  startTime: null,
+  pausedAt: null,
+  totalPausedMs: 0,
+  intervalId: null
+};
+
+function getFocusStatsToday() {
+  const today = new Date().toISOString().slice(0, 10);
+  const stats = JSON.parse(localStorage.getItem("focusStats") || "{}");
+  return stats[today] || 0;
+}
+
+function incrementFocusStats() {
+  const today = new Date().toISOString().slice(0, 10);
+  const stats = JSON.parse(localStorage.getItem("focusStats") || "{}");
+  stats[today] = (stats[today] || 0) + 1;
+  localStorage.setItem("focusStats", JSON.stringify(stats));
+}
+
+function renderFocusStarter() {
+  const activeTasks = tasks.filter(t => !t.done);
+  const taskOptions = activeTasks.map(t =>
+    `<option value="${t.id}">${t.text.replace(/"/g, '&quot;')}</option>`
+  ).join("");
+
+  const todayCount = getFocusStatsToday();
+  const todayHtml = todayCount > 0 ? `
+    <div class="focus-today-stat">
+      <span class="focus-today-icon">🔥</span>
+      <span>${todayCount} session${todayCount > 1 ? 's' : ''} terminée${todayCount > 1 ? 's' : ''} aujourd'hui</span>
+    </div>
+  ` : '';
+
+  const taskBlock = activeTasks.length > 0 ? `
+    <div class="focus-section-title">Tâche associée (optionnel)</div>
+    <select id="focus-task-select" class="focus-task-select">
+      <option value="">— Aucune (focus libre) —</option>
+      ${taskOptions}
+    </select>
+  ` : '';
+
+  return `
+    <h2>🍅 Mode Focus</h2>
+    <p class="info-subtitle">Concentre-toi à fond sur une seule chose</p>
+
+    ${todayHtml}
+
+    <div class="focus-section-title">Durée</div>
+    <div class="focus-duration-grid">
+      <button class="focus-duration-btn" onclick="startFocusSession(15)">
+        <div class="focus-duration-min">15</div>
+        <div class="focus-duration-unit">min</div>
+        <div class="focus-duration-label">Sprint</div>
+      </button>
+      <button class="focus-duration-btn primary" onclick="startFocusSession(25)">
+        <div class="focus-duration-min">25</div>
+        <div class="focus-duration-unit">min</div>
+        <div class="focus-duration-label">Pomodoro</div>
+      </button>
+      <button class="focus-duration-btn" onclick="startFocusSession(45)">
+        <div class="focus-duration-min">45</div>
+        <div class="focus-duration-unit">min</div>
+        <div class="focus-duration-label">Deep work</div>
+      </button>
+    </div>
+
+    ${taskBlock}
+  `;
+}
+
+function startFocusSession(durationMin) {
+  const select = document.getElementById("focus-task-select");
+  const taskId = select && select.value ? parseInt(select.value) : null;
+  hideInfoModal();
+  startFocus(durationMin, taskId);
+}
+
+function startFocus(durationMin, taskId) {
+  focusState = {
+    active: true,
+    paused: false,
+    taskId: taskId,
+    taskText: taskId ? (tasks.find(t => t.id === taskId)?.text || null) : null,
+    durationMin: durationMin,
+    startTime: Date.now(),
+    pausedAt: null,
+    totalPausedMs: 0,
+    intervalId: null
+  };
+
+  const overlay = document.getElementById("focus-overlay");
+  overlay.classList.add("visible");
+  overlay.classList.remove("paused");
+
+  document.getElementById("focus-task-name").textContent = focusState.taskText || "";
+  document.getElementById("focus-status").textContent = "Focus en cours";
+  document.getElementById("focus-pause-btn").style.display = "inline-flex";
+  document.getElementById("focus-resume-btn").style.display = "none";
+
+  focusState.intervalId = setInterval(tickFocus, 250);
+  tickFocus();
+}
+
+function tickFocus() {
+  if (!focusState.active || focusState.paused) return;
+
+  const elapsed = Date.now() - focusState.startTime - focusState.totalPausedMs;
+  const totalMs = focusState.durationMin * 60 * 1000;
+  const remaining = Math.max(0, totalMs - elapsed);
+
+  const minutes = Math.floor(remaining / 60000);
+  const seconds = Math.floor((remaining % 60000) / 1000);
+  document.getElementById("focus-time").textContent =
+    `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+  const progress = Math.min(100, (elapsed / totalMs) * 100);
+  document.getElementById("focus-progress-fill").style.width = `${progress}%`;
+
+  if (remaining <= 0) completeFocus();
+}
+
+function pauseFocus() {
+  if (!focusState.active || focusState.paused) return;
+  focusState.paused = true;
+  focusState.pausedAt = Date.now();
+  document.getElementById("focus-overlay").classList.add("paused");
+  document.getElementById("focus-status").textContent = "Pause";
+  document.getElementById("focus-pause-btn").style.display = "none";
+  document.getElementById("focus-resume-btn").style.display = "inline-flex";
+}
+
+function resumeFocus() {
+  if (!focusState.active || !focusState.paused) return;
+  focusState.totalPausedMs += Date.now() - focusState.pausedAt;
+  focusState.paused = false;
+  focusState.pausedAt = null;
+  document.getElementById("focus-overlay").classList.remove("paused");
+  document.getElementById("focus-status").textContent = "Focus en cours";
+  document.getElementById("focus-pause-btn").style.display = "inline-flex";
+  document.getElementById("focus-resume-btn").style.display = "none";
+}
+
+async function stopFocus() {
+  const confirmed = await showConfirm({
+    icon: "⏸️",
+    title: "Arrêter la session ?",
+    message: "Tu vas perdre le décompte en cours. Sûr ?",
+    confirmText: "Arrêter",
+    danger: true
+  });
+  if (!confirmed) return;
+  cleanupFocus();
+}
+
+function completeFocus() {
+  playFocusEndSound();
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
+  incrementFocusStats();
+
+  const min = focusState.durationMin;
+  const txt = focusState.taskText;
+  cleanupFocus();
+
+  setTimeout(() => {
+    showConfirm({
+      icon: "🎉",
+      title: "Session terminée !",
+      message: txt
+        ? `Bravo, ${min} min focus sur "${txt}". Une pause s'impose ☕`
+        : `Bravo, ${min} min de focus. Une pause s'impose ☕`,
+      confirmText: "OK"
+    });
+  }, 300);
+}
+
+function cleanupFocus() {
+  if (focusState.intervalId) clearInterval(focusState.intervalId);
+  document.getElementById("focus-overlay").classList.remove("visible", "paused");
+  focusState = {
+    active: false, paused: false, taskId: null, taskText: null,
+    durationMin: 25, startTime: null, pausedAt: null,
+    totalPausedMs: 0, intervalId: null
+  };
+}
+
+function playFocusEndSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [880, 1100, 1320].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      const start = ctx.currentTime + i * 0.18;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.25, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.01, start + 0.5);
+      osc.start(start);
+      osc.stop(start + 0.5);
+    });
+  } catch (e) { console.log("Sound failed:", e); }
+}
 
 // ==========================================
 //  GO
