@@ -819,3 +819,146 @@ body { padding-bottom: 100px !important; }
   box-shadow: 0 14px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.4);
   transform: scale(1.02);
 }
+/* ================================
+   📅 CALENDRIER HEBDO
+   ================================ */
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.cal-nav-btn {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: white;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+.cal-nav-btn:hover {
+  background: rgba(59,130,246,0.15);
+  border-color: rgba(59,130,246,0.4);
+}
+.cal-nav-title {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+.cal-today-btn {
+  display: block;
+  margin: 0 auto 14px;
+  padding: 6px 14px;
+  font-size: 12px;
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.3);
+  border-radius: 999px;
+  color: #93c5fd;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.cal-today-btn:hover {
+  background: rgba(59,130,246,0.2);
+}
+
+.cal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.cal-day {
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  transition: all 0.18s ease;
+}
+.cal-day.today {
+  background: rgba(59,130,246,0.08);
+  border-color: rgba(59,130,246,0.35);
+}
+.cal-day.past { opacity: 0.5; }
+.cal-day.weekend { background: rgba(255,255,255,0.015); }
+
+.cal-day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.cal-day-name {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.75);
+}
+.cal-day.today .cal-day-name { color: #93c5fd; }
+.cal-day-name .today-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 9px;
+  background: rgba(59,130,246,0.4);
+  border-radius: 999px;
+  margin-left: 6px;
+  letter-spacing: 0.5px;
+  color: white;
+}
+.cal-day-date {
+  font-size: 11px;
+  opacity: 0.55;
+}
+.cal-day-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cal-task {
+  padding: 7px 10px;
+  background: rgba(255,255,255,0.04);
+  border-left: 3px solid #6b7280;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255,255,255,0.92);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cal-empty {
+  font-size: 11px;
+  opacity: 0.3;
+  text-align: center;
+  padding: 4px;
+  font-style: italic;
+}
+
+.cal-no-date-section {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(255,255,255,0.02);
+  border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: 10px;
+}
+.cal-no-date-title {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.cal-no-date-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
