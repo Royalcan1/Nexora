@@ -2424,6 +2424,130 @@ render = function() {
 
   initSortableTasks();
 };
+// ==========================================
+//  📅 VUE CALENDRIER HEBDO
+// ==========================================
+
+let calendarWeekOffset = 0;
+
+function getMondayOfWeek(offset = 0) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const day = today.getDay() || 7;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - day + 1 + offset * 7);
+  return monday;
+}
+
+function navigateCalendar(delta) {
+  calendarWeekOffset += delta;
+  const body = document.getElementById("info-modal-body");
+  if (body) body.innerHTML = renderCalendar();
+}
+
+function renderCalendar() {
+  const start = getMondayOfWeek(calendarWeekOffset);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const activeTasks = tasks.filter(t => !t.done);
+  const tasksByDay = [[], [], [], [], [], [], []];
+  const tasksWithoutDate = [];
+
+  activeTasks.forEach(task => {
+    const due = getDueDate(task.text);
+    if (!due) { tasksWithoutDate.push(task); return; }
+    const dueDate = new Date(due.date);
+    dueDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((dueDate - start) / 86400000);
+    if (diffDays >= 0 && diffDays < 7) {
+      tasksByDay[diffDays].push(task);
+    }
+  });
+
+  const dayNames = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+  const monthsShort = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
+
+  let weekTitle;
+  if (calendarWeekOffset === 0) weekTitle = "Cette semaine";
+  else if (calendarWeekOffset === 1) weekTitle = "Semaine prochaine";
+  else if (calendarWeekOffset === -1) weekTitle = "Semaine dernière";
+  else weekTitle = `Du ${start.getDate()} ${monthsShort[start.getMonth()]}`;
+
+  const dayCards = dayNames.map((name, idx) => {
+    const dayDate = new Date(start);
+    dayDate.setDate(start.getDate() + idx);
+    const isToday = dayDate.getTime() === today.getTime();
+    const isPast = dayDate < today;
+    const isWeekend = idx >= 5;
+    const dayTasks = tasksByDay[idx];
+
+    const tasksHtml = dayTasks.length === 0
+      ? `<div class="cal-empty">aucune tâche</div>`
+      : dayTasks.map(t => {
+          const cat = getCategoryByName(t.category);
+          const catColor = cat ? cat.color : '#6b7280';
+          const safeText = t.text.replace(/"/g, '&quot;');
+          return `<div class="cal-task" style="border-left-color: ${catColor};" title="${safeText}">${t.text}</div>`;
+        }).join("");
+
+    return `
+      <div class="cal-day ${isToday ? 'today' : ''} ${isPast && !isToday ? 'past' : ''} ${isWeekend ? 'weekend' : ''}">
+        <div class="cal-day-header">
+          <div class="cal-day-name">
+            ${name}${isToday ? '<span class="today-tag">AUJOURD\'HUI</span>' : ''}
+          </div>
+          <div class="cal-day-date">${dayDate.getDate()} ${monthsShort[dayDate.getMonth()]}</div>
+        </div>
+        <div class="cal-day-tasks">${tasksHtml}</div>
+      </div>
+    `;
+  }).join("");
+
+  const noDateHtml = tasksWithoutDate.length > 0 ? `
+    <div class="cal-no-date-section">
+      <div class="cal-no-date-title">📌 Sans date précise (${tasksWithoutDate.length})</div>
+      <div class="cal-no-date-tasks">
+        ${tasksWithoutDate.map(t => {
+          const cat = getCategoryByName(t.category);
+          const catColor = cat ? cat.color : '#6b7280';
+          return `<div class="cal-task" style="border-left-color: ${catColor};">${t.text}</div>`;
+        }).join("")}
+      </div>
+    </div>
+  ` : '';
+
+  return `
+    <h2>📅 Calendrier</h2>
+    <p class="info-subtitle">Vue d'ensemble de ta semaine</p>
+
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="navigateCalendar(-1)" title="Semaine précédente">‹</button>
+      <div class="cal-nav-title">${weekTitle}</div>
+      <button class="cal-nav-btn" onclick="navigateCalendar(1)" title="Semaine suivante">›</button>
+    </div>
+
+    ${calendarWeekOffset !== 0 ? `<button class="cal-today-btn" onclick="navigateCalendar(${-calendarWeekOffset})">↩ Revenir à cette semaine</button>` : ''}
+
+    <div class="cal-grid">${dayCards}</div>
+
+    ${noDateHtml}
+  `;
+}
+
+// === Hook : ajoute "calendar" aux types de modal ===
+const _origRenderInfoModalContent = renderInfoModalContent;
+renderInfoModalContent = function(type) {
+  if (type === "calendar") return renderCalendar();
+  return _origRenderInfoModalContent(type);
+};
+
+// === Hook : reset l'offset à l'ouverture du calendrier ===
+const _origShowInfoModalCal = showInfoModal;
+showInfoModal = function(type) {
+  if (type === "calendar") calendarWeekOffset = 0;
+  return _origShowInfoModalCal(type);
+};
 
 // ==========================================
 //  GO
