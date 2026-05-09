@@ -2156,6 +2156,133 @@ renderDashboard = function() {
 
   return original + gamificationHtml;
 };
+// ==========================================
+//  🔁 TÂCHES RÉCURRENTES
+// ==========================================
+
+function detectRecurrence(text) {
+  const l = text.toLowerCase();
+  if (/\b(tous les jours|chaque jour|quotidien|chaque matin|chaque soir)\b/.test(l)) return 'daily';
+  if (/\bchaque lundi\b|\btous les lundis\b/.test(l))    return 'weekly:1';
+  if (/\bchaque mardi\b|\btous les mardis\b/.test(l))    return 'weekly:2';
+  if (/\bchaque mercredi\b|\btous les mercredis\b/.test(l)) return 'weekly:3';
+  if (/\bchaque jeudi\b|\btous les jeudis\b/.test(l))    return 'weekly:4';
+  if (/\bchaque vendredi\b|\btous les vendredis\b/.test(l)) return 'weekly:5';
+  if (/\bchaque samedi\b|\btous les samedis\b/.test(l))  return 'weekly:6';
+  if (/\bchaque dimanche\b|\btous les dimanches\b/.test(l)) return 'weekly:7';
+  if (/\b(en semaine|jours ouvrés|jours ouvres)\b/.test(l)) return 'weekdays';
+  if (/\b(week-end|weekend|le weekend)\b/.test(l)) return 'weekends';
+  return null;
+}
+
+function getRecurrenceLabel(rec) {
+  if (!rec) return null;
+  if (rec === 'daily') return 'Tous les jours';
+  if (rec === 'weekdays') return 'En semaine';
+  if (rec === 'weekends') return 'Week-end';
+  if (rec.startsWith('weekly:')) {
+    const day = parseInt(rec.split(':')[1]);
+    const labels = ['', 'lundis', 'mardis', 'mercredis', 'jeudis', 'vendredis', 'samedis', 'dimanches'];
+    return `Chaque ${labels[day]}`;
+  }
+  return null;
+}
+
+// Réactive automatiquement les tâches récurrentes le bon jour
+async function resetRecurringTasksIfNeeded() {
+  if (!currentUser || tasks.length === 0) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const todayDay = new Date().getDay() || 7;
+
+  const activePatterns = ['daily', `weekly:${todayDay}`];
+  if (todayDay >= 1 && todayDay <= 5) activePatterns.push('weekdays');
+  if (todayDay === 6 || todayDay === 7) activePatterns.push('weekends');
+
+  const idsToReset = [];
+  for (const pattern of activePatterns) {
+    const key = `lastReset_${pattern}_${currentUser.id}`;
+    if (localStorage.getItem(key) === today) continue;
+    tasks.filter(t => t.done && t.recurrence === pattern).forEach(t => idsToReset.push(t.id));
+    localStorage.setItem(key, today);
+  }
+
+  if (idsToReset.length > 0) {
+    const { error } = await db.from('tasks').update({ done: false }).in('id', idsToReset);
+    if (!error) {
+      console.log(`✅ ${idsToReset.length} tâche(s) récurrente(s) réactivée(s)`);
+      const { data } = await db.from('tasks').select('*');
+      tasks = data || [];
+      render();
+    }
+  }
+}
+
+// === Hook : après loadTasks ===
+const _origLoadTasksRecur = loadTasks;
+loadTasks = async function() {
+  await _origLoadTasksRecur();
+  await resetRecurringTasksIfNeeded();
+};
+
+// === Override addTask : détecte la récurrence ===
+addTask = async function() {
+  if (!currentUser) return;
+  let input = document.getElementById("input").value;
+  if (!input) return;
+  let list = input.split(/[+,/]/).map(t => t.trim()).filter(Boolean);
+
+  const newTasks = list.map(t => ({
+    text: t,
+    priority: getPriority(t),
+    time: getTime(t),
+    category: detectCategory(t),
+    recurrence: detectRecurrence(t),
+    done: false,
+    user_id: currentUser.id
+  }));
+
+  const { data, error } = await db.from("tasks").insert(newTasks).select();
+  if (error) { console.error("INSERT ERROR =", error); return; }
+  console.log("TASKS SAVED =", data);
+  document.getElementById("input").value = "";
+  await loadTasks();
+};
+
+// === Override editTask : met à jour la récurrence ===
+window.editTask = async function(id, newText) {
+  if (!id) return;
+  newText = newText.trim();
+  if (!newText) { await loadTasks(); return; }
+  const { error } = await db.from("tasks").update({
+    text: newText,
+    priority: getPriority(newText),
+    time: getTime(newText),
+    category: detectCategory(newText),
+    recurrence: detectRecurrence(newText)
+  }).eq("id", id);
+  if (error) { console.error("EDIT ERROR =", error); return; }
+  await loadTasks();
+};
+
+// === Hook render : ajoute le badge 🔁 sur les tâches récurrentes ===
+const _origRenderRecur = render;
+render = function() {
+  _origRenderRecur();
+  document.querySelectorAll('.task').forEach(taskEl => {
+    const id = taskEl.id?.replace('task-', '');
+    if (!id) return;
+    const task = tasks.find(t => t.id == id);
+    if (!task || !task.recurrence) return;
+    const headerRow = taskEl.querySelector('.task-header-row');
+    if (!headerRow || headerRow.querySelector('.recur-badge')) return;
+    const label = getRecurrenceLabel(task.recurrence) || '';
+    const badge = document.createElement('span');
+    badge.className = 'recur-badge';
+    badge.title = label;
+    badge.textContent = `🔁 ${label}`;
+    headerRow.appendChild(badge);
+  });
+};
 
 // ==========================================
 //  GO
