@@ -790,19 +790,24 @@ body { padding-bottom: 100px !important; }
 .drag-handle {
   align-self: center;
   cursor: grab;
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.25);
-  padding: 0 4px 0 8px;
+  font-size: 22px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 6px 4px 6px 10px;
   user-select: none;
   flex-shrink: 0;
   letter-spacing: -3px;
-  font-weight: 600;
-  transition: color 0.15s ease;
+  font-weight: 700;
+  transition: color 0.15s ease, transform 0.15s ease;
   touch-action: none;
+  display: inline-flex;
+  align-items: center;
 }
-.drag-handle:hover { color: rgba(255, 255, 255, 0.7); }
+.drag-handle:hover { 
+  color: rgba(255, 255, 255, 0.9);
+  transform: scale(1.15);
+}
 .drag-handle:active { cursor: grabbing; }
-
 /* États pendant le drag */
 .task-ghost {
   opacity: 0.35;
