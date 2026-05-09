@@ -2283,6 +2283,147 @@ render = function() {
     headerRow.appendChild(badge);
   });
 };
+// ==========================================
+//  🖱️ DRAG & DROP (réordonner les tâches actives)
+// ==========================================
+
+async function ensurePositionsBackfilled() {
+  if (!currentUser) return;
+  const active = tasks.filter(t => !t.done);
+  if (active.length === 0) return;
+  if (!active.some(t => t.position == null)) return;
+
+  const priOrder = { urgent: 0, medium: 1, normal: 2 };
+  const sorted = [...active].sort((a, b) => priOrder[a.priority] - priOrder[b.priority]);
+
+  const updates = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (sorted[i].position !== i) {
+      updates.push({ id: sorted[i].id, position: i });
+      sorted[i].position = i;
+    }
+  }
+  if (updates.length === 0) return;
+
+  await Promise.all(updates.map(({ id, position }) =>
+    db.from("tasks").update({ position }).eq("id", id)
+  ));
+  console.log(`📌 Backfill positions : ${updates.length} tâches`);
+}
+
+function compareTasksByPosition(a, b) {
+  if (a.position != null && b.position != null) return a.position - b.position;
+  if (a.position != null) return -1;
+  if (b.position != null) return 1;
+  const priOrder = { urgent: 0, medium: 1, normal: 2 };
+  return priOrder[a.priority] - priOrder[b.priority];
+}
+
+let _sortableInstance = null;
+function initSortableTasks() {
+  const list = document.getElementById("active-list");
+  if (!list) return;
+  if (typeof Sortable === "undefined") {
+    console.warn("⚠️ Sortable.js pas chargé");
+    return;
+  }
+  if (_sortableInstance) {
+    try { _sortableInstance.destroy(); } catch (e) {}
+    _sortableInstance = null;
+  }
+  _sortableInstance = Sortable.create(list, {
+    animation: 220,
+    handle: ".drag-handle",
+    ghostClass: "task-ghost",
+    chosenClass: "task-chosen",
+    dragClass: "task-dragging",
+    forceFallback: true,
+    fallbackTolerance: 5,
+    onEnd: handleTaskReorder
+  });
+}
+
+async function handleTaskReorder() {
+  const list = document.getElementById("active-list");
+  if (!list) return;
+  const taskEls = list.querySelectorAll(".task");
+  const updates = [];
+  taskEls.forEach((el, idx) => {
+    const id = parseInt(el.id.replace("task-", ""));
+    if (isNaN(id)) return;
+    updates.push({ id, position: idx });
+    const t = tasks.find(t => t.id === id);
+    if (t) t.position = idx;
+  });
+
+  await Promise.all(updates.map(({ id, position }) =>
+    db.from("tasks").update({ position }).eq("id", id)
+  ));
+  console.log(`✅ ${updates.length} tâche(s) réordonnée(s)`);
+}
+
+// === Hook loadTasks (par-dessus le hook récurrence existant) ===
+const _origLoadTasksDND = loadTasks;
+loadTasks = async function() {
+  await _origLoadTasksDND();
+  await ensurePositionsBackfilled();
+};
+
+// === Override addTask (consolidé : récurrence + position) ===
+addTask = async function() {
+  if (!currentUser) return;
+  let input = document.getElementById("input").value;
+  if (!input) return;
+  let list = input.split(/[+,/]/).map(t => t.trim()).filter(Boolean);
+
+  const positioned = tasks.filter(t => !t.done && t.position != null);
+  const maxPos = positioned.length > 0 ? Math.max(...positioned.map(t => t.position)) : -1;
+
+  const newTasks = list.map((t, i) => ({
+    text: t,
+    priority: getPriority(t),
+    time: getTime(t),
+    category: detectCategory(t),
+    recurrence: detectRecurrence(t),
+    position: maxPos + i + 1,
+    done: false,
+    user_id: currentUser.id
+  }));
+
+  const { data, error } = await db.from("tasks").insert(newTasks).select();
+  if (error) { console.error("INSERT ERROR =", error); return; }
+  console.log("TASKS SAVED =", data);
+  document.getElementById("input").value = "";
+  await loadTasks();
+};
+
+// === Hook render (par-dessus le hook récurrence) ===
+const _origRenderDND = render;
+render = function() {
+  _origRenderDND();
+
+  // Ajoute le drag handle ⋮⋮
+  document.querySelectorAll("#active-list .task").forEach(taskEl => {
+    if (taskEl.querySelector(".drag-handle")) return;
+    const handle = document.createElement("div");
+    handle.className = "drag-handle";
+    handle.innerHTML = "⋮⋮";
+    handle.title = "Glisser pour réordonner";
+    taskEl.appendChild(handle);
+  });
+
+  // Réordonne le DOM par position
+  const list = document.getElementById("active-list");
+  if (list) {
+    const sorted = tasks.filter(t => !t.done).sort(compareTasksByPosition);
+    sorted.forEach(t => {
+      const el = document.getElementById(`task-${t.id}`);
+      if (el) list.appendChild(el);
+    });
+  }
+
+  initSortableTasks();
+};
 
 // ==========================================
 //  GO
