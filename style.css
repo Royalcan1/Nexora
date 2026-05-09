@@ -786,3 +786,31 @@ body { padding-bottom: 100px !important; }
   flex-shrink: 0;
   white-space: nowrap;
 }
+/* 🖱️ DRAG & DROP */
+.drag-handle {
+  align-self: center;
+  cursor: grab;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.25);
+  padding: 0 4px 0 8px;
+  user-select: none;
+  flex-shrink: 0;
+  letter-spacing: -3px;
+  font-weight: 600;
+  transition: color 0.15s ease;
+  touch-action: none;
+}
+.drag-handle:hover { color: rgba(255, 255, 255, 0.7); }
+.drag-handle:active { cursor: grabbing; }
+
+/* États pendant le drag */
+.task-ghost {
+  opacity: 0.35;
+  background: rgba(59, 130, 246, 0.08) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+.task-chosen { cursor: grabbing; }
+.task-dragging {
+  box-shadow: 0 14px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.4);
+  transform: scale(1.02);
+}
