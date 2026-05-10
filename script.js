@@ -2738,6 +2738,30 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
+//  🎬 ANIMATION HERO — wrap emoji dans un span animable
+// ==========================================
+
+const _origUpdateHeroAnim = updateHero;
+updateHero = function() {
+  _origUpdateHeroAnim();
+
+  const greetingEl = document.getElementById("greeting");
+  if (!greetingEl || !currentUser) return;
+
+  // Remplace le greeting brut par une version où l'emoji peut être animé
+  const avatar = getCurrentAvatar();
+  const wave = avatar || "👋";
+
+  const escapeHTML = (s) => String(s).replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  ));
+
+  greetingEl.innerHTML =
+    `${escapeHTML(getSalutation())}, ${escapeHTML(getDisplayName())} ` +
+    `<span class="hero-emoji">${escapeHTML(wave)}</span>`;
+};
+
+// ==========================================
 //  GO
 // ==========================================
 initAuth();
