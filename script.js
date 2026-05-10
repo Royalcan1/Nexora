@@ -2762,6 +2762,184 @@ updateHero = function() {
 };
 
 // ==========================================
+//  📋 TEMPLATES DE TÂCHES
+// ==========================================
+
+const TASK_TEMPLATES = [
+  {
+    id: 'bac',
+    icon: '🎓',
+    name: 'Préparation BAC',
+    description: 'Plan de révision multi-matières',
+    tasks: [
+      'Réviser maths fiches importantes',
+      'Réviser français annales corrigées',
+      'Réviser philo dissertations',
+      'Réviser anglais oral et compréhension',
+      'Réviser SVT chapitres clés',
+      'Réviser histoire-géo cartes',
+      'Faire des annales corrigées chaque jour'
+    ]
+  },
+  {
+    id: 'exposé',
+    icon: '🎤',
+    name: 'Préparation exposé',
+    description: '5 étapes pour un exposé réussi',
+    tasks: [
+      'Recherche documentation et sources',
+      'Faire le plan détaillé',
+      'Rédiger le contenu',
+      'Préparer les slides ou support',
+      'Répéter à voix haute 3 fois'
+    ]
+  },
+  {
+    id: 'examen',
+    icon: '📝',
+    name: 'Examen dans 7 jours',
+    description: 'Plan de révision sur une semaine',
+    tasks: [
+      'Faire fiches chapitres 1-2 lundi',
+      'Faire fiches chapitres 3-4 mardi',
+      'Faire fiches chapitres 5-6 mercredi',
+      'Réviser toutes les fiches jeudi',
+      'Faire annales corrigées vendredi',
+      'Relire et auto-tester samedi',
+      'Repos et révision légère dimanche'
+    ]
+  },
+  {
+    id: 'rentrée',
+    icon: '🎒',
+    name: 'Rentrée scolaire',
+    description: 'Tout pour bien démarrer',
+    tasks: [
+      'Acheter fournitures (cahiers, stylos, classeur)',
+      'Acheter manuels scolaires',
+      'Compléter dossier d\'inscription',
+      'Récupérer emploi du temps',
+      'Préparer sac et trousse'
+    ]
+  },
+  {
+    id: 'lecture',
+    icon: '📖',
+    name: 'Lecture obligatoire',
+    description: 'Découper un livre en sessions',
+    tasks: [
+      'Lire chapitres 1-3',
+      'Lire chapitres 4-6',
+      'Lire chapitres 7-9',
+      'Lire chapitres 10-12',
+      'Faire fiche de lecture complète',
+      'Préparer commentaire ou questions'
+    ]
+  },
+  {
+    id: 'habits',
+    icon: '🔁',
+    name: 'Routine quotidienne',
+    description: 'Habitudes récurrentes (auto-renouvelées)',
+    tasks: [
+      'Réviser 30 min chaque jour',
+      'Faire devoirs chaque soir',
+      'Sport ou marche chaque jour',
+      'Lecture 20 min chaque soir',
+      'Préparer sac la veille chaque soir'
+    ]
+  }
+];
+
+function renderTemplates() {
+  const cards = TASK_TEMPLATES.map(t => `
+    <div class="template-card" onclick="previewTemplate('${t.id}')">
+      <div class="template-icon">${t.icon}</div>
+      <div class="template-name">${t.name}</div>
+      <div class="template-desc">${t.description}</div>
+      <div class="template-count">${t.tasks.length} tâches</div>
+    </div>
+  `).join("");
+
+  return `
+    <h2>📋 Templates</h2>
+    <p class="info-subtitle">Crée plusieurs tâches d'un coup avec un modèle prêt à l'emploi</p>
+    <div class="templates-grid">${cards}</div>
+  `;
+}
+
+function previewTemplate(id) {
+  const tpl = TASK_TEMPLATES.find(t => t.id === id);
+  if (!tpl) return;
+
+  const tasksHtml = tpl.tasks.map(text => {
+    const catName = detectCategory(text);
+    const catObj = catName ? getCategoryByName(catName) : null;
+    const catColor = catObj ? catObj.color : '#6b7280';
+    return `<div class="template-preview-task" style="border-left-color:${catColor};">${text}</div>`;
+  }).join("");
+
+  const body = document.getElementById("info-modal-body");
+  if (!body) return;
+  body.innerHTML = `
+    <h2>${tpl.icon} ${tpl.name}</h2>
+    <p class="info-subtitle">${tpl.description}</p>
+    <div class="template-preview-list">${tasksHtml}</div>
+    <div class="template-preview-actions">
+      <button class="btn secondary" onclick="showInfoModal('templates')">← Retour</button>
+      <button class="btn primary" onclick="applyTemplate('${id}')">Ajouter ces ${tpl.tasks.length} tâches</button>
+    </div>
+  `;
+}
+
+async function applyTemplate(id) {
+  const tpl = TASK_TEMPLATES.find(t => t.id === id);
+  if (!tpl || !currentUser) return;
+
+  const positioned = tasks.filter(t => !t.done && t.position != null);
+  const maxPos = positioned.length > 0 ? Math.max(...positioned.map(t => t.position)) : -1;
+
+  const newTasks = tpl.tasks.map((text, i) => ({
+    text,
+    priority: getPriority(text),
+    time: getTime(text),
+    category: detectCategory(text),
+    recurrence: detectRecurrence(text),
+    position: maxPos + i + 1,
+    done: false,
+    user_id: currentUser.id
+  }));
+
+  const { error } = await db.from('tasks').insert(newTasks);
+  if (error) {
+    console.error('Template apply error:', error);
+    showConfirm({
+      icon: '⚠️',
+      title: 'Erreur',
+      message: 'Impossible d\'ajouter les tâches. Réessaie.',
+      confirmText: 'OK'
+    });
+    return;
+  }
+
+  hideInfoModal();
+  await loadTasks();
+
+  showAchievementToast({
+    icon: tpl.icon,
+    name: tpl.name,
+    desc: `${tpl.tasks.length} tâches ajoutées 🎉`
+  });
+}
+
+// Hook : ajoute "templates" aux types de modal
+const _origRenderInfoModalTpl = renderInfoModalContent;
+renderInfoModalContent = function(type) {
+  if (type === "templates") return renderTemplates();
+  return _origRenderInfoModalTpl(type);
+};
+
+// ==========================================
 //  GO
 // ==========================================
 initAuth();
