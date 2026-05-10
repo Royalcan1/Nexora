@@ -1400,3 +1400,95 @@ html.theme-light .demo-check {
 html.theme-light .landing-view::before {
   background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.12) 0%, transparent 60%);
 }
+/* ================================
+   🎬 ANIMATION HERO
+   ================================ */
+
+/* Glow ambient subtil derrière le hero */
+.hero {
+  position: relative;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 600px;
+  height: 220px;
+  background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.07) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: -1;
+  animation: heroGlowPulse 6s ease-in-out infinite;
+}
+html.theme-light .hero::before {
+  background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.1) 0%, transparent 60%);
+}
+@keyframes heroGlowPulse {
+  0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.06); }
+}
+
+/* Stagger fade-in à l'entrée dans l'app */
+.hero h1 {
+  animation: heroSlideIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.hero .subtitle {
+  animation: heroSlideIn 0.7s 0.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.hero .stats-pills {
+  animation: heroSlideIn 0.7s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes heroSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Emoji du greeting qui salue subtilement, comme une vraie main */
+.hero-emoji {
+  display: inline-block;
+  animation: heroEmojiWave 3.5s ease-in-out 1.2s infinite;
+  transform-origin: 70% 80%;
+}
+@keyframes heroEmojiWave {
+  0%, 65%, 100% { transform: rotate(0deg); }
+  72% { transform: rotate(-14deg); }
+  79% { transform: rotate(10deg); }
+  86% { transform: rotate(-8deg); }
+  93% { transform: rotate(4deg); }
+}
+
+/* Stats pills : hover plus vivant + transition fluide */
+.stat-pill {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  cursor: default;
+}
+.stat-pill:hover {
+  transform: translateY(-2px);
+}
+.stat-pill.accent:hover {
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.2);
+}
+
+/* Subtle pulse sur l'avatar du profil (signale "je suis vivant") */
+.profile-btn:not(:hover) {
+  animation: profilePulse 4s ease-in-out infinite;
+}
+@keyframes profilePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+  50% { box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.12); }
+}
+
+/* Stat pill 🔥 streak : flamme qui vibre légèrement */
+.stat-pill.streak .stat-pill-icon {
+  display: inline-block;
+  animation: streakFlicker 1.8s ease-in-out infinite;
+  transform-origin: 50% 80%;
+}
+@keyframes streakFlicker {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.12) rotate(-3deg); }
+  50% { transform: scale(1.05) rotate(2deg); }
+  75% { transform: scale(1.1) rotate(-2deg); }
+}
