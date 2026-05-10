@@ -26,6 +26,14 @@
   <meta property="og:image" content="/icon-512.png">
   <meta property="og:type" content="website">
 
+  <!-- Anti-flash : applique le thème instantanément avant que CSS charge -->
+<script>
+  (function() {
+    var t = localStorage.getItem('theme') || 'dark';
+    if (t === 'light') document.documentElement.classList.add('theme-light');
+  })();
+</script>
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -71,6 +79,7 @@
             <div class="more-item" onclick="showInfoModal('categories')">🎨 Mes matières</div>
             <div class="more-item" onclick="showInfoModal('focus')">🍅 Mode Focus</div>
             <div class="more-item" onclick="showInfoModal('calendar')">📅 Calendrier</div>
+            <div class="more-item" id="theme-toggle-item" onclick="toggleTheme()">☀️ Mode clair</div>
             <div class="more-item" onclick="showInfoModal('notifications')">🔔 Notifications</div>
             <div class="more-item" onclick="showInfoModal('dashboard')">📊 Dashboard</div>
           </div>
