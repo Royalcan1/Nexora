@@ -221,6 +221,19 @@
     <div class="focus-tip">Mets ton téléphone en silencieux et concentre-toi 🎯</div>
   </div>
 </div>
+
+  <!-- 🌅 Overlay onboarding (premier login uniquement) -->
+<div id="onboarding-overlay" class="onb-overlay">
+  <div class="onb-modal">
+    <button class="onb-skip" onclick="skipOnboarding()" title="Passer">Passer</button>
+    <div id="onboarding-content"></div>
+    <div id="onboarding-dots" class="onb-dots"></div>
+    <div class="onb-actions">
+      <button class="onb-btn secondary" id="onb-prev" onclick="prevOnboardingSlide()">← Précédent</button>
+      <button class="onb-btn primary" id="onb-next" onclick="nextOnboardingSlide()">Suivant →</button>
+    </div>
+  </div>
+</div>
   
 </body>
 </html>
