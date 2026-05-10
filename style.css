@@ -1573,3 +1573,46 @@ html.theme-light .template-preview-task {
   background: rgba(0,0,0,0.025);
   border-color: rgba(0,0,0,0.06);
 }
+/* ================================
+   📜 SCROLL DANS LES SECTIONS
+   ================================ */
+#active-list,
+#done-list {
+  max-height: 65vh;
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+/* Scrollbar Webkit (Chrome, Safari, Edge) */
+#active-list::-webkit-scrollbar,
+#done-list::-webkit-scrollbar {
+  width: 6px;
+}
+#active-list::-webkit-scrollbar-track,
+#done-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+#active-list::-webkit-scrollbar-thumb,
+#done-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+#active-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Mode clair */
+html.theme-light #active-list,
+html.theme-light #done-list {
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+html.theme-light #active-list::-webkit-scrollbar-thumb,
+html.theme-light #done-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+html.theme-light #active-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
