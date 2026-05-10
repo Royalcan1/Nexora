@@ -2696,6 +2696,48 @@ renderSupport = function() {
 };
 
 // ==========================================
+//  ☀️ MODE CLAIR / SOMBRE
+// ==========================================
+
+function getCurrentTheme() {
+  return localStorage.getItem('theme') || 'dark';
+}
+
+function applyTheme(theme) {
+  document.documentElement.classList.toggle('theme-light', theme === 'light');
+
+  // Met à jour la barre du navigateur (couleur de l'address bar mobile)
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    meta.content = theme === 'light' ? '#f5f7fa' : '#0b1220';
+  }
+
+  // Met à jour le label du menu
+  const item = document.getElementById('theme-toggle-item');
+  if (item) {
+    item.innerHTML = theme === 'light' ? '🌙 Mode sombre' : '☀️ Mode clair';
+  }
+}
+
+function toggleTheme() {
+  const newTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('theme', newTheme);
+  applyTheme(newTheme);
+
+  // Ferme le menu
+  const menu = document.getElementById('more-dropdown');
+  if (menu) {
+    menu.classList.remove('open');
+    menu.classList.add('closed');
+  }
+}
+
+// Applique le thème au chargement (le script anti-flash dans <head> a déjà mis la classe sur <html>)
+document.addEventListener('DOMContentLoaded', () => {
+  applyTheme(getCurrentTheme());
+});
+
+// ==========================================
 //  GO
 // ==========================================
 initAuth();
