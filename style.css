@@ -1492,3 +1492,84 @@ html.theme-light .hero::before {
   50% { transform: scale(1.05) rotate(2deg); }
   75% { transform: scale(1.1) rotate(-2deg); }
 }
+/* ================================
+   📋 TEMPLATES DE TÂCHES
+   ================================ */
+.templates-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 480px) {
+  .templates-grid { grid-template-columns: 1fr; }
+}
+.template-card {
+  padding: 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+.template-card:hover {
+  background: rgba(59,130,246,0.1);
+  border-color: rgba(59,130,246,0.4);
+  transform: translateY(-2px);
+}
+.template-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+  line-height: 1;
+}
+.template-name {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+.template-desc {
+  font-size: 12px;
+  opacity: 0.65;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+.template-count {
+  font-size: 11px;
+  color: #93c5fd;
+  font-weight: 600;
+}
+
+/* Preview screen */
+.template-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.template-preview-task {
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-left: 3px solid #6b7280;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.template-preview-actions {
+  display: flex;
+  gap: 10px;
+}
+.template-preview-actions .btn { flex: 1; }
+
+/* Light mode */
+html.theme-light .template-card {
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.08);
+}
+html.theme-light .template-preview-task {
+  background: rgba(0,0,0,0.025);
+  border-color: rgba(0,0,0,0.06);
+}
