@@ -6,34 +6,79 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>Nexora</title>
 
-  <!-- PWA / Manifest -->
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0b1220">
-  <meta name="description" content="L'app de gestion de tâches pour étudiants">
+  <!-- ======= SEO ======= -->
+<title>Nexora — Tes devoirs organisés sans effort</title>
+<meta name="description" content="Nexora est l'app gratuite qui organise tes devoirs automatiquement. Détection auto de priorité, matière et échéance. Mode Focus, streaks, calendrier — pensé pour les étudiants.">
+<meta name="keywords" content="todo étudiant, gestion devoirs, app étudiant, organisation scolaire, planning lycéen, todo list gratuit, pomodoro étudiant, devoirs maison, examen révision">
+<meta name="author" content="Nicolas — Nexora">
+<meta name="robots" content="index, follow">
+<meta name="language" content="French">
+<link rel="canonical" href="https://nexora-eight-smoky.vercel.app/">
 
-  <!-- Icônes -->
-  <link rel="icon" type="image/png" href="/favicon.png">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<!-- ======= PWA / Manifest ======= -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b1220">
+<meta name="mobile-web-app-capable" content="yes">
 
-  <!-- iOS Safari : permettre le mode standalone -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Nexora">
+<!-- ======= Icônes ======= -->
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
-  <!-- Open Graph (joli aperçu quand partagé sur les réseaux) -->
-  <meta property="og:title" content="Nexora">
-  <meta property="og:description" content="L'app de gestion de tâches pour étudiants">
-  <meta property="og:image" content="/icon-512.png">
-  <meta property="og:type" content="website">
+<!-- ======= iOS Safari ======= -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nexora">
 
-  <!-- Anti-flash : applique le thème instantanément avant que CSS charge -->
+<!-- ======= Open Graph (Facebook, LinkedIn, Discord, Slack…) ======= -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Nexora">
+<meta property="og:title" content="Nexora — Tes devoirs organisés sans effort">
+<meta property="og:description" content="L'app gratuite qui organise tes devoirs automatiquement. Détection auto de priorité, matière et échéance. Mode Focus, streaks, calendrier — pensé pour les étudiants.">
+<meta property="og:image" content="https://nexora-eight-smoky.vercel.app/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Nexora — Tes devoirs organisés sans effort">
+<meta property="og:url" content="https://nexora-eight-smoky.vercel.app/">
+<meta property="og:locale" content="fr_FR">
+
+<!-- ======= Twitter Card ======= -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Nexora — Tes devoirs organisés sans effort">
+<meta name="twitter:description" content="L'app gratuite qui organise tes devoirs automatiquement. Mode Focus, streaks, calendrier — pensé pour les étudiants.">
+<meta name="twitter:image" content="https://nexora-eight-smoky.vercel.app/og-image.png">
+<meta name="twitter:image:alt" content="Nexora — Tes devoirs organisés sans effort">
+
+<!-- ======= Schema.org JSON-LD (rich results Google) ======= -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Nexora",
+  "description": "L'app gratuite qui organise tes devoirs automatiquement. Détection auto de priorité, matière et échéance. Mode Focus, streaks, calendrier — pensé pour les étudiants.",
+  "url": "https://nexora-eight-smoky.vercel.app/",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "Any",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "EUR"
+  },
+  "creator": {
+    "@type": "Person",
+    "name": "Nicolas"
+  },
+  "inLanguage": "fr-FR",
+  "isAccessibleForFree": true
+}
+</script>
+
+<!-- ======= Anti-flash thème ======= -->
 <script>
   (function() {
     var t = localStorage.getItem('theme') || 'dark';
     if (t === 'light') document.documentElement.classList.add('theme-light');
   })();
 </script>
-
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
