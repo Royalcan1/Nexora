@@ -2550,6 +2550,152 @@ showInfoModal = function(type) {
 };
 
 // ==========================================
+//  🌅 ONBOARDING FLOW
+// ==========================================
+
+const ONBOARDING_SLIDES = [
+  {
+    icon: "👋",
+    title: () => `Bienvenue ${getDisplayName()} !`,
+    subtitle: "Ravi de t'avoir sur Nexora.",
+    body: "En 3 étapes rapides, je te montre comment t'en servir efficacement."
+  },
+  {
+    icon: "✍️",
+    title: () => "Tape tes devoirs en vrac",
+    subtitle: "Pas besoin de t'organiser, on s'en charge.",
+    body: "Sépare-les avec <code>+</code>, <code>,</code> ou <code>/</code>.<br><br>Exemple : <code>examen maths demain + DM français + lire ch. 3</code> → 3 tâches créées d'un coup."
+  },
+  {
+    icon: "🎯",
+    title: () => "Tout est détecté automatiquement",
+    subtitle: "Priorité, matière, échéance.",
+    body: "<b>« Examen demain »</b> → urgent 🔴<br><b>« DM français »</b> → matière auto 📖<br><b>« Réviser chaque jour »</b> → récurrent 🔁<br><br>Tu écris naturellement, on classe pour toi."
+  },
+  {
+    icon: "🚀",
+    title: () => "Et bien plus dans le menu ⋯",
+    subtitle: "Tout ce qu'il te faut pour bosser.",
+    body: "🍅 <b>Mode Focus</b> — sessions 25 min<br>🔥 <b>Streaks</b> — habitude quotidienne<br>📅 <b>Calendrier</b> — vue d'ensemble<br>🎨 <b>Matières</b> — couleurs custom<br>🔔 <b>Rappels</b> — notifs aux bonnes heures"
+  },
+  {
+    icon: "✨",
+    title: () => "C'est parti !",
+    subtitle: "Tu es prêt à tout gérer.",
+    body: "Tu peux relancer ce tuto à tout moment depuis <b>💬 Support</b>.<br><br>Allez, on s'y met."
+  }
+];
+
+let onboardingSlide = 0;
+
+function shouldShowOnboarding() {
+  return currentUser && !currentUser.user_metadata?.onboarding_completed;
+}
+
+function showOnboarding() {
+  onboardingSlide = 0;
+  const overlay = document.getElementById("onboarding-overlay");
+  if (!overlay) return;
+  overlay.classList.add("visible");
+  renderOnboardingSlide();
+}
+
+function renderOnboardingSlide() {
+  const slide = ONBOARDING_SLIDES[onboardingSlide];
+  const total = ONBOARDING_SLIDES.length;
+  const isLast = onboardingSlide === total - 1;
+
+  const content = document.getElementById("onboarding-content");
+  if (content) {
+    content.innerHTML = `
+      <div class="onb-icon">${slide.icon}</div>
+      <h2 class="onb-title">${slide.title()}</h2>
+      <p class="onb-subtitle">${slide.subtitle}</p>
+      <p class="onb-body">${slide.body}</p>
+    `;
+  }
+
+  const dots = document.getElementById("onboarding-dots");
+  if (dots) {
+    dots.innerHTML = ONBOARDING_SLIDES.map((_, i) =>
+      `<span class="onb-dot ${i === onboardingSlide ? 'active' : ''}"></span>`
+    ).join("");
+  }
+
+  const prev = document.getElementById("onb-prev");
+  const next = document.getElementById("onb-next");
+  if (prev) prev.style.visibility = onboardingSlide === 0 ? "hidden" : "visible";
+  if (next) next.textContent = isLast ? "C'est parti ! ✨" : "Suivant →";
+}
+
+function nextOnboardingSlide() {
+  if (onboardingSlide >= ONBOARDING_SLIDES.length - 1) {
+    completeOnboarding();
+    return;
+  }
+  onboardingSlide++;
+  renderOnboardingSlide();
+}
+
+function prevOnboardingSlide() {
+  if (onboardingSlide === 0) return;
+  onboardingSlide--;
+  renderOnboardingSlide();
+}
+
+async function completeOnboarding() {
+  const overlay = document.getElementById("onboarding-overlay");
+  if (overlay) overlay.classList.remove("visible");
+
+  await db.auth.updateUser({ data: { onboarding_completed: true } });
+  if (currentUser) {
+    currentUser.user_metadata = {
+      ...(currentUser.user_metadata || {}),
+      onboarding_completed: true
+    };
+  }
+  console.log("✅ Onboarding completed");
+}
+
+async function skipOnboarding() {
+  await completeOnboarding();
+}
+
+// Permet de relancer manuellement le tuto (depuis Support par ex.)
+async function replayOnboarding() {
+  await db.auth.updateUser({ data: { onboarding_completed: false } });
+  if (currentUser) {
+    currentUser.user_metadata = {
+      ...(currentUser.user_metadata || {}),
+      onboarding_completed: false
+    };
+  }
+  hideInfoModal();
+  setTimeout(showOnboarding, 300);
+}
+
+// === Hook updateUI : déclenche l'onboarding au premier login ===
+const _origUpdateUIOnb = updateUI;
+updateUI = function() {
+  _origUpdateUIOnb();
+  if (shouldShowOnboarding()) {
+    setTimeout(showOnboarding, 600); // délai pour que l'app charge d'abord
+  }
+};
+
+// === Hook renderSupport : ajoute un bouton "Revoir le tuto" ===
+const _origRenderSupport = renderSupport;
+renderSupport = function() {
+  return _origRenderSupport() + `
+    <div class="info-section">
+      <h3>Tutoriel</h3>
+      <p>Tu veux revoir l'introduction de Nexora ?</p>
+      <button class="btn secondary" style="margin-top:8px;" onclick="replayOnboarding()">🌅 Relancer le tuto</button>
+    </div>
+  `;
+};
+
+// ==========================================
 //  GO
 // ==========================================
 initAuth();
