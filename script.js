@@ -1124,10 +1124,10 @@ function renderNotifications() {
     </div>
 
     <div class="notif-info">
-      <p><b>📌 À savoir</b></p>
-      <p>Les rappels arrivent quand l'app est ouverte ou récente en arrière-plan. Pour des notifs même app fermée, on ajoutera plus tard un serveur push.</p>
-      <p>Sur iPhone : nécessite iOS 16.4+ et Nexora installé sur l'écran d'accueil.</p>
-    </div>
+  <p><b>📌 Comment ça marche</b></p>
+  <p>Chaque matin à 8h, tu reçois automatiquement une notif push avec un résumé de tes tâches. Ça marche même app fermée ou tel verrouillé.</p>
+  <p><b>📲 Sur iPhone</b> : nécessite iOS 16.4+ <b>ET</b> Nexora installé sur l'écran d'accueil. Tant que c'est seulement dans Safari, ça marchera pas.</p>
+</div>
   `;
 }
 
