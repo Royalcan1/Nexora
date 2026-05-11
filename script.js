@@ -14,6 +14,8 @@ let tasks = [];
 let currentUser = null;
 let authMode = "login";
 let isPasswordRecovery = false;
+let editingCatIndex = null;
+let isAddingCat = false;
 
 console.log("JS CHARGE OK");
 
@@ -58,7 +60,6 @@ function updateUI() {
     if (landingView) landingView.style.display = "none";
     updateAvatarUI();
     updateHero();
-    scheduleTodayNotifications();
   } else {
     if (loggedOut) loggedOut.style.display = "flex";
     if (loggedIn)  loggedIn.style.display  = "none";
@@ -585,10 +586,8 @@ function confirmCancel() {
 // ==========================================
 
 function getDisplayName() {
-  // Priorité : prénom stocké dans user_metadata
   const meta = currentUser?.user_metadata;
   if (meta?.first_name) return meta.first_name;
-  // Fallback : dérive du mail
   if (!currentUser?.email) return "toi";
   const prefix = currentUser.email.split("@")[0];
   const firstPart = prefix.split(/[._-]/)[0];
@@ -669,201 +668,46 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ==========================================
-//  🔔 NOTIFICATIONS
+//  🔔 NOTIFICATIONS (push uniquement — récap matinal 8h)
 // ==========================================
 
-function getNotificationSettings() {
-  return currentUser?.user_metadata?.notifications || {
-    enabled: false,
-    times: ["09:00", "13:00", "18:00"]
-  };
-}
-
-async function saveNotificationSettings(settings) {
-  const { error } = await db.auth.updateUser({ data: { notifications: settings } });
-  if (error) { console.error("NOTIF SAVE ERROR =", error); return false; }
-  if (currentUser) {
-    currentUser.user_metadata = { ...(currentUser.user_metadata || {}), notifications: settings };
-  }
-  scheduleTodayNotifications();
-  return true;
-}
-
-async function requestNotifPermission() {
-  if (!("Notification" in window)) return "unsupported";
-  if (Notification.permission === "granted") return "granted";
-  if (Notification.permission === "denied") return "denied";
-  return await Notification.requestPermission();
-}
-
-let notifTimeouts = [];
-
-function scheduleTodayNotifications() {
-  notifTimeouts.forEach((t) => clearTimeout(t));
-  notifTimeouts = [];
-
-  const s = getNotificationSettings();
-  if (!s.enabled) return;
-  if (!("Notification" in window) || Notification.permission !== "granted") return;
-
-  const now = new Date();
-  s.times.forEach((timeStr) => {
-    const [h, m] = timeStr.split(":").map(Number);
-    const target = new Date();
-    target.setHours(h, m, 0, 0);
-    if (target <= now) return;
-    const delay = target - now;
-    const t = setTimeout(() => fireReminder(timeStr), delay);
-    notifTimeouts.push(t);
-  });
-  console.log(`Notifs planifiées : ${notifTimeouts.length} aujourd'hui`);
-}
-
-async function fireReminder() {
-  const active = tasks.filter((t) => !t.done);
-  if (active.length === 0) return;
-
-  const urgent = active.filter((t) => t.priority === "urgent").length;
-  let body;
-  if (urgent > 0) body = `${urgent} tâche${urgent > 1 ? "s" : ""} urgente${urgent > 1 ? "s" : ""} ! ${active.length} en tout.`;
-  else if (active.length === 1) body = `1 tâche en cours : ${active[0].text}`;
-  else body = `Tu as ${active.length} tâches en cours. Allez, on s'y met !`;
-
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    await reg.showNotification("📚 Nexora", {
-      body,
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
-      tag: "nexora-reminder",
-      renotify: true,
-      vibrate: [100, 50, 100]
-    });
-  } catch (e) {
-    console.error("Notif error:", e);
-  }
-}
-
-async function testNotification() {
-  const perm = await requestNotifPermission();
-  if (perm !== "granted") {
-    showConfirm({
-      icon: "🚫",
-      title: "Permission refusée",
-      message: perm === "unsupported"
-        ? "Ton navigateur ne supporte pas les notifications. Sur iPhone : iOS 16.4+ + app installée requis."
-        : "Autorise les notifications dans les réglages de ton navigateur ou de ton téléphone.",
-      confirmText: "OK"
-    });
-    return;
-  }
-
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    await reg.showNotification("📚 Nexora", {
-      body: "Test réussi ! 🎉 Tes rappels sont prêts.",
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
-      tag: "nexora-test",
-      vibrate: [100, 50, 100]
-    });
-  } catch (e) {
-    console.error("❌ Erreur notif :", e);
-    showConfirm({
-      icon: "⚠️",
-      title: "Erreur d'envoi",
-      message: "Une erreur est survenue. Détails dans la console (F12).",
-      confirmText: "OK"
-    });
-  }
-}
-
-async function toggleNotifEnabled(checkbox) {
-  if (checkbox.checked) {
-    const perm = await requestNotifPermission();
-    if (perm !== "granted") {
-      checkbox.checked = false;
-      showConfirm({
-        icon: "🚫",
-        title: "Permission refusée",
-        message: perm === "unsupported"
-          ? "Ton navigateur ne supporte pas les notifications. Sur iPhone, installe d'abord Nexora sur ton écran d'accueil et utilise iOS 16.4+."
-          : "Autorise les notifications dans les réglages de ton téléphone pour utiliser cette fonctionnalité.",
-        confirmText: "OK"
-      });
-      return;
-    }
-  }
-  const s = getNotificationSettings();
-  s.enabled = checkbox.checked;
-  await saveNotificationSettings(s);
-  document.getElementById("info-modal-body").innerHTML = renderNotifications();
-}
-
-async function updateNotifTime(index, value) {
-  const s = getNotificationSettings();
-  s.times[index] = value;
-  await saveNotificationSettings(s);
-}
-
-async function addNotifTime() {
-  const s = getNotificationSettings();
-  if (s.times.length >= 6) return;
-  s.times.push("12:00");
-  await saveNotificationSettings(s);
-  document.getElementById("info-modal-body").innerHTML = renderNotifications();
-}
-
-async function removeNotifTime(index) {
-  const s = getNotificationSettings();
-  if (s.times.length <= 1) return;
-  s.times.splice(index, 1);
-  await saveNotificationSettings(s);
-  document.getElementById("info-modal-body").innerHTML = renderNotifications();
-}
-
 function renderNotifications() {
-  const s = getNotificationSettings();
-  const supported = "Notification" in window;
-  const permission = supported ? Notification.permission : "unsupported";
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                      || window.navigator.standalone === true;
+  const supported = 'serviceWorker' in navigator && 'PushManager' in window;
+  const permission = ('Notification' in window) ? Notification.permission : 'unsupported';
 
-  let permBadge = "";
-  if (!supported) permBadge = `<div class="notif-warn">⚠️ Ton navigateur ne supporte pas les notifications.</div>`;
-  else if (permission === "denied") permBadge = `<div class="notif-warn">🚫 Notifications bloquées dans tes réglages.</div>`;
-
-  const timeRows = s.times.map((t, i) => `
-    <div class="notif-time-row">
-      <input type="time" class="notif-time-input" value="${t}" onchange="updateNotifTime(${i}, this.value)" ${!s.enabled ? 'disabled' : ''}>
-      ${s.times.length > 1 ? `<button class="notif-time-remove" onclick="removeNotifTime(${i})" ${!s.enabled ? 'disabled' : ''}>✕</button>` : ''}
-    </div>
-  `).join("");
+  let warning = '';
+  if (!supported) {
+    warning = `<div class="notif-warn">⚠️ Ton navigateur ne supporte pas les notifications push.</div>`;
+  } else if (isMobile && !isStandalone) {
+    warning = `<div class="notif-warn">📲 <b>Sur iPhone</b> : installe d'abord Nexora sur ton écran d'accueil (Partager → Sur l'écran d'accueil). Sinon Apple bloque les notifs.</div>`;
+  } else if (permission === 'denied') {
+    warning = `<div class="notif-warn">🚫 Notifications bloquées dans les réglages de ton navigateur.</div>`;
+  }
 
   return `
     <h2>🔔 Notifications</h2>
-    <p class="info-subtitle">Reçois des rappels de tes tâches en cours</p>
-    ${permBadge}
+    <p class="info-subtitle">Reçois ton récap chaque matin à 8h</p>
+
+    ${warning}
+
     <div class="notif-toggle-row">
       <div>
-        <div class="notif-toggle-title">Activer les rappels</div>
-        <div class="notif-toggle-sub">Notifications aux horaires choisis</div>
+        <div class="notif-toggle-title">Notification du matin</div>
+        <div class="notif-toggle-sub" id="notif-status">Chargement...</div>
       </div>
       <label class="switch">
-        <input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="toggleNotifEnabled(this)">
+        <input type="checkbox" id="push-toggle" onchange="togglePushNotif(this)">
         <span class="slider"></span>
       </label>
     </div>
-    <div class="notif-times-section ${!s.enabled ? 'disabled' : ''}">
-      <div class="notif-section-title">⏰ Horaires des rappels</div>
-      ${timeRows}
-      ${s.times.length < 6 ? `<button class="notif-add-time" onclick="addNotifTime()" ${!s.enabled ? 'disabled' : ''}>+ Ajouter un horaire</button>` : ''}
-    </div>
-    <div class="notif-test-section">
-      <button class="btn primary" onclick="testNotification()">📤 Envoyer une notif de test</button>
-    </div>
+
     <div class="notif-info">
-      <p><b>📌 À savoir</b></p>
-      <p>Les rappels arrivent quand l'app est ouverte ou récente en arrière-plan.</p>
-      <p>Sur iPhone : nécessite iOS 16.4+ et Nexora installé sur l'écran d'accueil.</p>
+      <p><b>📌 Comment ça marche</b></p>
+      <p>Chaque matin à 8h, tu reçois automatiquement une notif push avec ton récap de tâches. Ça marche <b>même app fermée et tel verrouillé</b>.</p>
+      <p><b>📲 Sur iPhone</b> : nécessite iOS 16.4+ <b>ET</b> Nexora installé sur l'écran d'accueil.</p>
     </div>
   `;
 }
@@ -969,6 +813,12 @@ function showInfoModal(type) {
   menu.classList.remove("open");
   menu.classList.add("closed");
 
+  // Reset cat editing state when opening categories
+  if (type === "categories") {
+    editingCatIndex = null;
+    isAddingCat = false;
+  }
+
   const body = document.getElementById("info-modal-body");
   body.innerHTML = renderInfoModalContent(type);
 
@@ -986,6 +836,7 @@ function hideInfoModal() {
 function renderInfoModalContent(type) {
   if (type === "notifications") return renderNotifications();
   if (type === "avatar")        return renderAvatar();
+  if (type === "categories")    return renderCategories();
   if (type === "focus")         return renderFocusStarter();
   if (type === "dashboard")     return renderDashboard();
   if (type === "support")       return renderSupport();
@@ -994,8 +845,7 @@ function renderInfoModalContent(type) {
   if (type === "install-ios")   return renderInstallIOS();
   if (type === "privacy")       return renderPrivacy();
   if (type === "cgu")           return renderCGU();
-  // Les types suivants sont gérés par leurs blocs override dans script.js :
-  // "categories", "focus", "calendar", "templates"
+  // "calendar" et "templates" sont ajoutés par leurs blocs override plus bas
   return "";
 }
 
@@ -1397,7 +1247,6 @@ function setAvatarTab(name) {
   if (body) body.innerHTML = renderAvatar();
 }
 
-// Sauvegarde du prénom / nom depuis la modal profil
 async function saveProfileName() {
   const firstInput = document.getElementById("profile-firstname-input");
   const lastInput  = document.getElementById("profile-lastname-input");
@@ -1425,7 +1274,6 @@ async function saveProfileName() {
 
   updateHero();
 
-  // Feedback visuel sur le bouton
   const feedbackEl = document.getElementById("profile-save-feedback");
   if (feedbackEl) {
     feedbackEl.textContent = "✅ Enregistré !";
@@ -1486,15 +1334,12 @@ function renderAvatar() {
 function toggleTheme() {
   const isLight = document.documentElement.classList.toggle('theme-light');
   localStorage.setItem('theme', isLight ? 'light' : 'dark');
-  // Mettre à jour le label du menu
   const btn = document.getElementById('theme-toggle-item');
   if (btn) btn.textContent = isLight ? '🌙 Mode sombre' : '☀️ Mode clair';
-  // Mettre à jour theme-color mobile
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = isLight ? '#f5f7fa' : '#0b1220';
 }
 
-// Initialise le bon label au chargement
 document.addEventListener('DOMContentLoaded', () => {
   const stored = localStorage.getItem('theme') || 'dark';
   const btn = document.getElementById('theme-toggle-item');
@@ -1620,10 +1465,6 @@ window.addEventListener("appinstalled", () => {
 
 document.addEventListener("DOMContentLoaded", refreshInstallButtonVisibility);
 
-// ==========================================
-//  ⬇️ PLACE ICI TES BLOCS D'OVERRIDE (avant initAuth)
-//  Ordre attendu :
-//  16. Mode Focus / Pomodoro
 // ==========================================
 //  🍅 MODE FOCUS / POMODORO
 // ==========================================
@@ -1838,7 +1679,7 @@ function playFocusEndSound() {
     });
   } catch (e) { console.log("Sound failed:", e); }
 }
-//  17. Streaks + Gamification
+
 // ==========================================
 //  🔥 STREAKS + GAMIFICATION
 // ==========================================
@@ -1903,7 +1744,6 @@ async function recordTaskCompletion() {
   g.last_active_date = today;
   if ((g.current_streak || 0) > (g.best_streak || 0)) g.best_streak = g.current_streak;
 
-  // Détection nouveaux succès
   const before = new Set(g.unlocked_achievements || []);
   const stats = {
     totalDone: g.total_done,
@@ -1950,7 +1790,6 @@ const _origToggleTask = window.toggleTask;
 window.toggleTask = async function(id, currentDone) {
   await _origToggleTask(id, currentDone);
   if (!currentDone) {
-    // La tâche vient d'être cochée
     await recordTaskCompletion();
   }
 };
@@ -2020,7 +1859,6 @@ renderDashboard = function() {
   return original + gamificationHtml;
 };
 
-//  18. Tâches récurrentes
 // ==========================================
 //  🔁 TÂCHES RÉCURRENTES
 // ==========================================
@@ -2053,7 +1891,6 @@ function getRecurrenceLabel(rec) {
   return null;
 }
 
-// Réactive automatiquement les tâches récurrentes le bon jour
 async function resetRecurringTasksIfNeeded() {
   if (!currentUser || tasks.length === 0) return;
   const today = new Date().toISOString().slice(0, 10);
@@ -2082,14 +1919,12 @@ async function resetRecurringTasksIfNeeded() {
   }
 }
 
-// === Hook : après loadTasks ===
 const _origLoadTasksRecur = loadTasks;
 loadTasks = async function() {
   await _origLoadTasksRecur();
   await resetRecurringTasksIfNeeded();
 };
 
-// === Override addTask : détecte la récurrence ===
 addTask = async function() {
   if (!currentUser) return;
   let input = document.getElementById("input").value;
@@ -2113,7 +1948,6 @@ addTask = async function() {
   await loadTasks();
 };
 
-// === Override editTask : met à jour la récurrence ===
 window.editTask = async function(id, newText) {
   if (!id) return;
   newText = newText.trim();
@@ -2129,7 +1963,6 @@ window.editTask = async function(id, newText) {
   await loadTasks();
 };
 
-// === Hook render : ajoute le badge 🔁 sur les tâches récurrentes ===
 const _origRenderRecur = render;
 render = function() {
   _origRenderRecur();
@@ -2149,17 +1982,15 @@ render = function() {
   });
 };
 
-//  19. Drag & Drop
 // ==========================================
 //  🖱️ DRAG & DROP (réordonner les tâches actives)
 // ==========================================
 
-// Backfill des positions au premier chargement
 async function ensurePositionsBackfilled() {
   if (!currentUser) return;
   const active = tasks.filter(t => !t.done);
   if (active.length === 0) return;
-  if (!active.some(t => t.position == null)) return; // déjà fait
+  if (!active.some(t => t.position == null)) return;
 
   const priOrder = { urgent: 0, medium: 1, normal: 2 };
   const sorted = [...active].sort((a, b) => priOrder[a.priority] - priOrder[b.priority]);
@@ -2179,7 +2010,6 @@ async function ensurePositionsBackfilled() {
   console.log(`📌 Backfill positions : ${updates.length} tâches`);
 }
 
-// Comparateur pour le tri (positions d'abord, puis priorité en fallback)
 function compareTasksByPosition(a, b) {
   if (a.position != null && b.position != null) return a.position - b.position;
   if (a.position != null) return -1;
@@ -2188,7 +2018,6 @@ function compareTasksByPosition(a, b) {
   return priOrder[a.priority] - priOrder[b.priority];
 }
 
-// Initialise / réinitialise Sortable sur la liste active
 let _sortableInstance = null;
 function initSortableTasks() {
   const list = document.getElementById("active-list");
@@ -2207,7 +2036,7 @@ function initSortableTasks() {
     ghostClass: "task-ghost",
     chosenClass: "task-chosen",
     dragClass: "task-dragging",
-    forceFallback: true,        // animation plus smooth + meilleur sur mobile
+    forceFallback: true,
     fallbackTolerance: 5,
     onEnd: handleTaskReorder
   });
@@ -2232,14 +2061,12 @@ async function handleTaskReorder() {
   console.log(`✅ ${updates.length} tâche(s) réordonnée(s)`);
 }
 
-// === Hook loadTasks : backfill positions après chargement ===
 const _origLoadTasksDND = loadTasks;
 loadTasks = async function() {
   await _origLoadTasksDND();
   await ensurePositionsBackfilled();
 };
 
-// === Override addTask : nouvelle tâche prend position = max + 1 ===
 addTask = async function() {
   if (!currentUser) return;
   let input = document.getElementById("input").value;
@@ -2267,12 +2094,10 @@ addTask = async function() {
   await loadTasks();
 };
 
-// === Hook render : ajoute le drag handle, réordonne par position, init Sortable ===
 const _origRenderDND2 = render;
 render = function() {
   _origRenderDND2();
 
-  // Ajoute le ⋮⋮ à chaque tâche active
   document.querySelectorAll("#active-list .task").forEach(taskEl => {
     if (taskEl.querySelector(".drag-handle")) return;
     const handle = document.createElement("div");
@@ -2282,21 +2107,18 @@ render = function() {
     taskEl.appendChild(handle);
   });
 
-  // Réordonne le DOM selon les positions
   const list = document.getElementById("active-list");
   if (list) {
     const sorted = tasks.filter(t => !t.done).sort(compareTasksByPosition);
     sorted.forEach(t => {
       const el = document.getElementById(`task-${t.id}`);
-      if (el) list.appendChild(el); // appendChild déplace l'élément existant
+      if (el) list.appendChild(el);
     });
   }
 
-  // Active le drag
   initSortableTasks();
 };
 
-//  20. Calendrier
 // ==========================================
 //  📅 VUE CALENDRIER HEBDO
 // ==========================================
@@ -2422,7 +2244,6 @@ showInfoModal = function(type) {
   return _origShowInfoModalCal(type);
 };
 
-//  21. Onboarding
 // ==========================================
 //  🌅 ONBOARDING FLOW
 // ==========================================
@@ -2450,7 +2271,7 @@ const ONBOARDING_SLIDES = [
     icon: "🚀",
     title: () => "Et bien plus dans le menu ⋯",
     subtitle: "Tout ce qu'il te faut pour bosser.",
-    body: "🍅 <b>Mode Focus</b> — sessions 25 min<br>🔥 <b>Streaks</b> — habitude quotidienne<br>📅 <b>Calendrier</b> — vue d'ensemble<br>🎨 <b>Matières</b> — couleurs custom<br>🔔 <b>Rappels</b> — notifs aux bonnes heures"
+    body: "🍅 <b>Mode Focus</b> — sessions 25 min<br>🔥 <b>Streaks</b> — habitude quotidienne<br>📅 <b>Calendrier</b> — vue d'ensemble<br>🎨 <b>Matières</b> — couleurs custom<br>🔔 <b>Rappels</b> — notif chaque matin"
   },
   {
     icon: "✨",
@@ -2535,7 +2356,6 @@ async function skipOnboarding() {
   await completeOnboarding();
 }
 
-// Permet de relancer manuellement le tuto (depuis Support par ex.)
 async function replayOnboarding() {
   await db.auth.updateUser({ data: { onboarding_completed: false } });
   if (currentUser) {
@@ -2548,16 +2368,14 @@ async function replayOnboarding() {
   setTimeout(showOnboarding, 300);
 }
 
-// === Hook updateUI : déclenche l'onboarding au premier login ===
 const _origUpdateUIOnb = updateUI;
 updateUI = function() {
   _origUpdateUIOnb();
   if (shouldShowOnboarding()) {
-    setTimeout(showOnboarding, 600); // délai pour que l'app charge d'abord
+    setTimeout(showOnboarding, 600);
   }
 };
 
-// === Hook renderSupport : ajoute un bouton "Revoir le tuto" ===
 const _origRenderSupport = renderSupport;
 renderSupport = function() {
   return _origRenderSupport() + `
@@ -2569,7 +2387,6 @@ renderSupport = function() {
   `;
 };
 
-//  22. Animations hero (override updateHero)
 // ==========================================
 //  🎬 ANIMATION HERO — wrap emoji dans un span animable
 // ==========================================
@@ -2581,7 +2398,6 @@ updateHero = function() {
   const greetingEl = document.getElementById("greeting");
   if (!greetingEl || !currentUser) return;
 
-  // Remplace le greeting brut par une version où l'emoji peut être animé
   const avatar = getCurrentAvatar();
   const wave = avatar || "👋";
 
@@ -2594,7 +2410,6 @@ updateHero = function() {
     `<span class="hero-emoji">${escapeHTML(wave)}</span>`;
 };
 
-//  23. Templates (override renderInfoModalContent)
 // ==========================================
 //  📋 TEMPLATES DE TÂCHES
 // ==========================================
@@ -2773,12 +2588,10 @@ renderInfoModalContent = function(type) {
   return _origRenderInfoModalTpl(type);
 };
 
-//  24. Catégories (override renderInfoModalContent + addTask)
-
 // ==========================================
 //  🎨 CATÉGORIES / MATIÈRES
 // ==========================================
- 
+
 const DEFAULT_CATEGORIES = [
   { name: "Maths", color: "#3b82f6", icon: "📐", keywords: ["maths","math","mathématique","mathematique","mathématiques","mathematiques","algèbre","algebre","géométrie","geometrie","calcul","fonction","équation","equation","fractions","statistiques","statistique"] },
   { name: "Français", color: "#ef4444", icon: "📖", keywords: ["français","francais","dissertation","littérature","litterature","roman","poésie","poesie","commentaire de texte","grammaire","conjugaison","orthographe"] },
@@ -2790,30 +2603,31 @@ const DEFAULT_CATEGORIES = [
   { name: "Philo", color: "#6b7280", icon: "💭", keywords: ["philo","philosophie","dissertation philo"] },
   { name: "EPS", color: "#ec4899", icon: "⚽", keywords: ["eps","sport","gym","gymnastique","course","natation","muscul","football","basket","tennis"] }
 ];
- 
+
 const COLOR_PALETTE = [
   "#3b82f6", "#ef4444", "#f59e0b", "#22c55e",
   "#a855f7", "#06b6d4", "#f97316", "#ec4899",
   "#6b7280", "#14b8a6", "#84cc16", "#0ea5e9"
 ];
- 
+
 const ICON_PALETTE = [
   "📐", "📖", "🗺️", "🌱", "🇬🇧", "⚗️",
   "🇪🇸", "💭", "⚽", "🎨", "🎵", "💻",
   "📚", "🔬", "⚖️", "🌍", "🧠", "✏️"
 ];
- 
+
+// 🔧 FIX : retombe sur DEFAULT_CATEGORIES si tableau vide ou invalide
 function getCategories() {
   const saved = currentUser?.user_metadata?.categories;
   return (Array.isArray(saved) && saved.length > 0) ? saved : DEFAULT_CATEGORIES;
 }
- 
+
 function getCategoryByName(name) {
   if (!name) return null;
   const cats = getCategories();
   return cats.find(c => c.name.toLowerCase() === name.toLowerCase()) || null;
 }
- 
+
 function detectCategory(text) {
   if (!text) return null;
   const lower = text.toLowerCase();
@@ -2826,7 +2640,7 @@ function detectCategory(text) {
   }
   return null;
 }
- 
+
 async function saveCategories(cats) {
   const { error } = await db.auth.updateUser({ data: { categories: cats } });
   if (error) { console.error("CAT SAVE ERROR =", error); return false; }
@@ -2835,28 +2649,28 @@ async function saveCategories(cats) {
   }
   return true;
 }
- 
+
 async function startEditCategory(index) {
   editingCatIndex = index;
   isAddingCat = false;
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderCategories();
 }
- 
+
 async function startAddCategory() {
   isAddingCat = true;
   editingCatIndex = null;
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderCategories();
 }
- 
+
 function cancelEditCategory() {
   editingCatIndex = null;
   isAddingCat = false;
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderCategories();
 }
- 
+
 async function saveEditCategory() {
   const nameEl = document.getElementById("cat-edit-name");
   if (!nameEl) return;
@@ -2867,9 +2681,9 @@ async function saveEditCategory() {
   }
   const selectedColor = document.querySelector(".cat-color-cell.selected")?.dataset.color || COLOR_PALETTE[0];
   const selectedIcon = document.querySelector(".cat-icon-cell.selected")?.dataset.icon || "📚";
- 
+
   const cats = [...getCategories()];
- 
+
   if (isAddingCat) {
     cats.push({ name, color: selectedColor, icon: selectedIcon, keywords: [name.toLowerCase()] });
   } else if (editingCatIndex !== null) {
@@ -2880,19 +2694,19 @@ async function saveEditCategory() {
       icon: selectedIcon
     };
   }
- 
+
   await saveCategories(cats);
   editingCatIndex = null;
   isAddingCat = false;
-  render(); // refresh tasks (badges might change)
+  render();
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderCategories();
 }
- 
+
 async function deleteCategory(index) {
   const cats = [...getCategories()];
 
-  // 🆕 garde-fou : pas de suppression si dernière matière
+  // 🔧 FIX : empêche de supprimer la dernière matière
   if (cats.length <= 1) {
     showConfirm({
       icon: "⚠️",
@@ -2902,10 +2716,10 @@ async function deleteCategory(index) {
     });
     return;
   }
-  
+
   const cat = cats[index];
   if (!cat) return;
- 
+
   const confirmed = await showConfirm({
     icon: "🗑️",
     title: `Supprimer "${cat.name}"`,
@@ -2914,11 +2728,10 @@ async function deleteCategory(index) {
     danger: true
   });
   if (!confirmed) return;
- 
+
   cats.splice(index, 1);
   await saveCategories(cats);
- 
-  // Retire la catégorie des tâches en BDD
+
   const tasksWithCat = tasks.filter(t => t.category === cat.name);
   if (tasksWithCat.length > 0) {
     const ids = tasksWithCat.map(t => t.id);
@@ -2927,11 +2740,11 @@ async function deleteCategory(index) {
   } else {
     render();
   }
- 
+
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderCategories();
 }
- 
+
 async function resetCategories() {
   const confirmed = await showConfirm({
     icon: "🔄",
@@ -2941,7 +2754,7 @@ async function resetCategories() {
     danger: true
   });
   if (!confirmed) return;
- 
+
   await saveCategories(DEFAULT_CATEGORIES);
   editingCatIndex = null;
   isAddingCat = false;
@@ -2949,38 +2762,37 @@ async function resetCategories() {
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderCategories();
 }
- 
+
 function renderCategories() {
   const cats = getCategories();
- 
-  // Mode édition / ajout
+
   if (editingCatIndex !== null || isAddingCat) {
     const cat = isAddingCat
       ? { name: "", color: COLOR_PALETTE[0], icon: "📚" }
       : cats[editingCatIndex];
- 
+
     const colorCells = COLOR_PALETTE.map(c => `
       <div class="cat-color-cell ${c === cat.color ? 'selected' : ''}" style="background:${c}" data-color="${c}" onclick="selectCatColor('${c}')"></div>
     `).join("");
- 
+
     const iconCells = ICON_PALETTE.map(i => `
       <div class="cat-icon-cell ${i === cat.icon ? 'selected' : ''}" data-icon="${i}" onclick="selectCatIcon('${i}')">${i}</div>
     `).join("");
- 
+
     return `
       <h2>🎨 ${isAddingCat ? "Nouvelle matière" : "Modifier la matière"}</h2>
       <p class="info-subtitle">Personnalise ta matière comme tu veux</p>
- 
+
       <div class="cat-edit-form">
         <div class="cat-edit-form-title">Nom</div>
         <input type="text" id="cat-edit-name" class="cat-edit-input" placeholder="Ex: Anglais, Maths..." maxlength="30" value="${cat.name.replace(/"/g, '&quot;')}">
- 
+
         <div class="cat-edit-form-title">Couleur</div>
         <div class="cat-color-picker">${colorCells}</div>
- 
+
         <div class="cat-edit-form-title">Icône</div>
         <div class="cat-icon-picker">${iconCells}</div>
- 
+
         <div class="cat-edit-actions">
           <button class="btn secondary" onclick="cancelEditCategory()">Annuler</button>
           <button class="btn primary" onclick="saveEditCategory()">${isAddingCat ? "Ajouter" : "Enregistrer"}</button>
@@ -2988,8 +2800,7 @@ function renderCategories() {
       </div>
     `;
   }
- 
-  // Mode liste
+
   const rows = cats.map((c, i) => `
     <div class="cat-row">
       <div class="cat-row-icon">${c.icon || "📚"}</div>
@@ -3001,30 +2812,143 @@ function renderCategories() {
       </div>
     </div>
   `).join("");
- 
+
   return `
     <h2>🎨 Mes matières</h2>
     <p class="info-subtitle">Tes tâches sont automatiquement classées dans ces matières</p>
- 
+
     <div class="cat-list">${rows}</div>
- 
+
     <button class="cat-add-btn" onclick="startAddCategory()">+ Ajouter une matière</button>
- 
+
     <button class="cat-reset-link" onclick="resetCategories()">↻ Réinitialiser aux matières par défaut</button>
   `;
 }
- 
+
 function selectCatColor(color) {
   document.querySelectorAll(".cat-color-cell").forEach(c => c.classList.remove("selected"));
   document.querySelectorAll(`.cat-color-cell[data-color="${color}"]`).forEach(c => c.classList.add("selected"));
 }
- 
+
 function selectCatIcon(icon) {
   document.querySelectorAll(".cat-icon-cell").forEach(c => c.classList.remove("selected"));
   document.querySelectorAll(".cat-icon-cell").forEach(c => {
     if (c.dataset.icon === icon) c.classList.add("selected");
   });
 }
+
+// ==========================================
+//  📲 WEB PUSH NOTIFICATIONS
+// ==========================================
+
+const VAPID_PUBLIC_KEY = 'BMzlJsWZpGajWEz40-R-aP00_qjuohAKsnQWn-Z-Zv_5o4DenAC2qmjCGXaSJZVbpWIXJjwRkd_DYux98jMbsto';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+async function isPushSupported() {
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+
+async function getCurrentPushSubscription() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    return await reg.pushManager.getSubscription();
+  } catch { return null; }
+}
+
+async function subscribeToPush() {
+  if (!await isPushSupported()) {
+    showConfirm({
+      icon: '⚠️',
+      title: 'Non supporté',
+      message: 'Ton navigateur ne supporte pas les notifications push. Sur iPhone, installe d\'abord Nexora sur ton écran d\'accueil.',
+      confirmText: 'OK'
+    });
+    return false;
+  }
+
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') {
+    showConfirm({
+      icon: '🚫',
+      title: 'Permission refusée',
+      message: 'Autorise les notifications dans les réglages de ton navigateur ou téléphone.',
+      confirmText: 'OK'
+    });
+    return false;
+  }
+
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+
+    const json = sub.toJSON();
+    const { error } = await db.from('push_subscriptions').upsert({
+      user_id: currentUser.id,
+      endpoint: json.endpoint,
+      p256dh: json.keys.p256dh,
+      auth: json.keys.auth
+    }, { onConflict: 'endpoint' });
+
+    if (error) throw error;
+    console.log('✅ Push subscription enregistrée');
+    return true;
+  } catch (err) {
+    console.error('Subscribe error:', err);
+    return false;
+  }
+}
+
+async function unsubscribeFromPush() {
+  const sub = await getCurrentPushSubscription();
+  if (!sub) return;
+  await db.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+  await sub.unsubscribe();
+}
+
+async function togglePushNotif(checkbox) {
+  const wantsOn = checkbox.checked;
+  if (wantsOn) {
+    const ok = await subscribeToPush();
+    if (!ok) { checkbox.checked = false; return; }
+  } else {
+    await unsubscribeFromPush();
+  }
+  const status = document.getElementById('notif-status');
+  if (status) {
+    status.textContent = wantsOn
+      ? '✅ Activée — push chaque matin à 8h'
+      : 'Désactivée — clique pour activer';
+  }
+}
+
+// Hook : init l'état du toggle à l'ouverture de la modal Notifications
+const _origShowInfoModalPush = showInfoModal;
+showInfoModal = function(type) {
+  _origShowInfoModalPush(type);
+  if (type === 'notifications') {
+    setTimeout(async () => {
+      const sub = await getCurrentPushSubscription();
+      const isSubscribed = !!sub;
+      const toggle = document.getElementById('push-toggle');
+      const status = document.getElementById('notif-status');
+      if (toggle) toggle.checked = isSubscribed;
+      if (status) {
+        status.textContent = isSubscribed
+          ? '✅ Activée — push chaque matin à 8h'
+          : 'Désactivée — clique pour activer';
+      }
+    }, 50);
+  }
+};
 
 // ==========================================
 //  GO — TOUJOURS EN DERNIER
