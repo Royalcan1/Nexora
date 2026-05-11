@@ -2774,10 +2774,11 @@ renderInfoModalContent = function(type) {
 };
 
 //  24. Catégories (override renderInfoModalContent + addTask)
+
 // ==========================================
 //  🎨 CATÉGORIES / MATIÈRES
 // ==========================================
-
+ 
 const DEFAULT_CATEGORIES = [
   { name: "Maths", color: "#3b82f6", icon: "📐", keywords: ["maths","math","mathématique","mathematique","mathématiques","mathematiques","algèbre","algebre","géométrie","geometrie","calcul","fonction","équation","equation","fractions","statistiques","statistique"] },
   { name: "Français", color: "#ef4444", icon: "📖", keywords: ["français","francais","dissertation","littérature","litterature","roman","poésie","poesie","commentaire de texte","grammaire","conjugaison","orthographe"] },
@@ -2789,29 +2790,29 @@ const DEFAULT_CATEGORIES = [
   { name: "Philo", color: "#6b7280", icon: "💭", keywords: ["philo","philosophie","dissertation philo"] },
   { name: "EPS", color: "#ec4899", icon: "⚽", keywords: ["eps","sport","gym","gymnastique","course","natation","muscul","football","basket","tennis"] }
 ];
-
+ 
 const COLOR_PALETTE = [
   "#3b82f6", "#ef4444", "#f59e0b", "#22c55e",
   "#a855f7", "#06b6d4", "#f97316", "#ec4899",
   "#6b7280", "#14b8a6", "#84cc16", "#0ea5e9"
 ];
-
+ 
 const ICON_PALETTE = [
   "📐", "📖", "🗺️", "🌱", "🇬🇧", "⚗️",
   "🇪🇸", "💭", "⚽", "🎨", "🎵", "💻",
   "📚", "🔬", "⚖️", "🌍", "🧠", "✏️"
 ];
-
+ 
 function getCategories() {
   return currentUser?.user_metadata?.categories || DEFAULT_CATEGORIES;
 }
-
+ 
 function getCategoryByName(name) {
   if (!name) return null;
   const cats = getCategories();
   return cats.find(c => c.name.toLowerCase() === name.toLowerCase()) || null;
 }
-
+ 
 function detectCategory(text) {
   if (!text) return null;
   const lower = text.toLowerCase();
@@ -2824,7 +2825,7 @@ function detectCategory(text) {
   }
   return null;
 }
-
+ 
 async function saveCategories(cats) {
   const { error } = await db.auth.updateUser({ data: { categories: cats } });
   if (error) { console.error("CAT SAVE ERROR =", error); return false; }
@@ -2833,28 +2834,28 @@ async function saveCategories(cats) {
   }
   return true;
 }
-
+ 
 async function startEditCategory(index) {
   editingCatIndex = index;
   isAddingCat = false;
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderCategories();
 }
-
+ 
 async function startAddCategory() {
   isAddingCat = true;
   editingCatIndex = null;
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderCategories();
 }
-
+ 
 function cancelEditCategory() {
   editingCatIndex = null;
   isAddingCat = false;
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderCategories();
 }
-
+ 
 async function saveEditCategory() {
   const nameEl = document.getElementById("cat-edit-name");
   if (!nameEl) return;
@@ -2865,9 +2866,9 @@ async function saveEditCategory() {
   }
   const selectedColor = document.querySelector(".cat-color-cell.selected")?.dataset.color || COLOR_PALETTE[0];
   const selectedIcon = document.querySelector(".cat-icon-cell.selected")?.dataset.icon || "📚";
-
+ 
   const cats = [...getCategories()];
-
+ 
   if (isAddingCat) {
     cats.push({ name, color: selectedColor, icon: selectedIcon, keywords: [name.toLowerCase()] });
   } else if (editingCatIndex !== null) {
@@ -2878,7 +2879,7 @@ async function saveEditCategory() {
       icon: selectedIcon
     };
   }
-
+ 
   await saveCategories(cats);
   editingCatIndex = null;
   isAddingCat = false;
@@ -2886,12 +2887,12 @@ async function saveEditCategory() {
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderCategories();
 }
-
+ 
 async function deleteCategory(index) {
   const cats = [...getCategories()];
   const cat = cats[index];
   if (!cat) return;
-
+ 
   const confirmed = await showConfirm({
     icon: "🗑️",
     title: `Supprimer "${cat.name}"`,
@@ -2900,10 +2901,10 @@ async function deleteCategory(index) {
     danger: true
   });
   if (!confirmed) return;
-
+ 
   cats.splice(index, 1);
   await saveCategories(cats);
-
+ 
   // Retire la catégorie des tâches en BDD
   const tasksWithCat = tasks.filter(t => t.category === cat.name);
   if (tasksWithCat.length > 0) {
@@ -2913,11 +2914,11 @@ async function deleteCategory(index) {
   } else {
     render();
   }
-
+ 
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderCategories();
 }
-
+ 
 async function resetCategories() {
   const confirmed = await showConfirm({
     icon: "🔄",
@@ -2927,7 +2928,7 @@ async function resetCategories() {
     danger: true
   });
   if (!confirmed) return;
-
+ 
   await saveCategories(DEFAULT_CATEGORIES);
   editingCatIndex = null;
   isAddingCat = false;
@@ -2935,38 +2936,38 @@ async function resetCategories() {
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderCategories();
 }
-
+ 
 function renderCategories() {
   const cats = getCategories();
-
+ 
   // Mode édition / ajout
   if (editingCatIndex !== null || isAddingCat) {
     const cat = isAddingCat
       ? { name: "", color: COLOR_PALETTE[0], icon: "📚" }
       : cats[editingCatIndex];
-
+ 
     const colorCells = COLOR_PALETTE.map(c => `
       <div class="cat-color-cell ${c === cat.color ? 'selected' : ''}" style="background:${c}" data-color="${c}" onclick="selectCatColor('${c}')"></div>
     `).join("");
-
+ 
     const iconCells = ICON_PALETTE.map(i => `
       <div class="cat-icon-cell ${i === cat.icon ? 'selected' : ''}" data-icon="${i}" onclick="selectCatIcon('${i}')">${i}</div>
     `).join("");
-
+ 
     return `
       <h2>🎨 ${isAddingCat ? "Nouvelle matière" : "Modifier la matière"}</h2>
       <p class="info-subtitle">Personnalise ta matière comme tu veux</p>
-
+ 
       <div class="cat-edit-form">
         <div class="cat-edit-form-title">Nom</div>
         <input type="text" id="cat-edit-name" class="cat-edit-input" placeholder="Ex: Anglais, Maths..." maxlength="30" value="${cat.name.replace(/"/g, '&quot;')}">
-
+ 
         <div class="cat-edit-form-title">Couleur</div>
         <div class="cat-color-picker">${colorCells}</div>
-
+ 
         <div class="cat-edit-form-title">Icône</div>
         <div class="cat-icon-picker">${iconCells}</div>
-
+ 
         <div class="cat-edit-actions">
           <button class="btn secondary" onclick="cancelEditCategory()">Annuler</button>
           <button class="btn primary" onclick="saveEditCategory()">${isAddingCat ? "Ajouter" : "Enregistrer"}</button>
@@ -2974,7 +2975,7 @@ function renderCategories() {
       </div>
     `;
   }
-
+ 
   // Mode liste
   const rows = cats.map((c, i) => `
     <div class="cat-row">
@@ -2987,24 +2988,24 @@ function renderCategories() {
       </div>
     </div>
   `).join("");
-
+ 
   return `
     <h2>🎨 Mes matières</h2>
     <p class="info-subtitle">Tes tâches sont automatiquement classées dans ces matières</p>
-
+ 
     <div class="cat-list">${rows}</div>
-
+ 
     <button class="cat-add-btn" onclick="startAddCategory()">+ Ajouter une matière</button>
-
+ 
     <button class="cat-reset-link" onclick="resetCategories()">↻ Réinitialiser aux matières par défaut</button>
   `;
 }
-
+ 
 function selectCatColor(color) {
   document.querySelectorAll(".cat-color-cell").forEach(c => c.classList.remove("selected"));
   document.querySelectorAll(`.cat-color-cell[data-color="${color}"]`).forEach(c => c.classList.add("selected"));
 }
-
+ 
 function selectCatIcon(icon) {
   document.querySelectorAll(".cat-icon-cell").forEach(c => c.classList.remove("selected"));
   document.querySelectorAll(".cat-icon-cell").forEach(c => {
