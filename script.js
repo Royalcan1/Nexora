@@ -3011,9 +3011,9 @@ function selectCatIcon(icon) {
     if (c.dataset.icon === icon) c.classList.add("selected");
   });
 }
-// ==========================================
 
 // ==========================================
 //  GO — TOUJOURS EN DERNIER
 // ==========================================
+
 initAuth();
