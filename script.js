@@ -2938,6 +2938,141 @@ renderInfoModalContent = function(type) {
   if (type === "templates") return renderTemplates();
   return _origRenderInfoModalTpl(type);
 };
+// ==========================================
+//  🔒 PRIVACY + CGU
+// ==========================================
+
+function renderPrivacy() {
+  return `
+    <h2>🔒 Politique de confidentialité</h2>
+    <p class="info-subtitle">Dernière mise à jour : mai 2026</p>
+
+    <div class="info-section">
+      <h3>1. Données collectées</h3>
+      <p>Pour utiliser Nexora, on a besoin de :</p>
+      <ul>
+        <li><b>Email</b> : pour ton compte et la récupération de mot de passe</li>
+        <li><b>Prénom, nom (optionnel)</b> : pour personnaliser ton expérience</li>
+        <li><b>Tes tâches</b> : contenu que tu écris dans l'app</li>
+        <li><b>Avatar, matières, préférences</b> : tes personnalisations</li>
+      </ul>
+      <p>Aucune donnée de navigation, aucun tracking publicitaire, aucun cookie tiers.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>2. Où c'est stocké</h3>
+      <p>Tes données sont stockées chez <b>Supabase</b> (serveurs en UE — Allemagne), hébergeur conforme RGPD. Le site est hébergé sur <b>Vercel</b>. Aucune autre tierce partie n'accède à tes données.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>3. Combien de temps</h3>
+      <p>Tant que ton compte existe. Si tu supprimes ton compte, toutes tes données sont effacées définitivement sous 30 jours.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>4. Tes droits (RGPD)</h3>
+      <p>Tu as le droit de :</p>
+      <ul>
+        <li>Accéder à toutes tes données</li>
+        <li>Les rectifier ou les supprimer</li>
+        <li>Demander leur portabilité (export)</li>
+        <li>Retirer ton consentement à tout moment</li>
+      </ul>
+      <p>Pour exercer ces droits : écris à <b>nexora.app@proton.me</b>. Réponse sous 30 jours.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>5. Stockage local</h3>
+      <p>Nexora utilise le <b>localStorage</b> de ton navigateur pour mémoriser tes préférences (thème clair/sombre, sections dépliées, sessions Focus du jour). Ces données restent sur ton appareil, on ne les voit pas.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>6. Sécurité</h3>
+      <p>Connexions chiffrées en HTTPS. Mots de passe hashés (jamais stockés en clair). Tu es le seul à pouvoir accéder à tes tâches via ta session.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>7. IA</h3>
+      <p>Quand tu utilises ✨ <b>Découper avec l'IA</b>, le texte de ta tâche est envoyé à <b>Anthropic</b> (Claude) pour générer les sous-tâches. Anthropic ne stocke pas tes données et ne les utilise pas pour entraîner ses modèles.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>8. Mineurs</h3>
+      <p>Nexora s'adresse aux étudiants de 13 ans et plus. Si tu as moins de 15 ans, demande à un parent avant de créer un compte.</p>
+    </div>
+  `;
+}
+
+function renderCGU() {
+  return `
+    <h2>📜 Conditions Générales d'Utilisation</h2>
+    <p class="info-subtitle">Dernière mise à jour : mai 2026</p>
+
+    <div class="info-section">
+      <h3>1. Service</h3>
+      <p>Nexora est une application web gratuite de gestion de tâches pour étudiants, accessible à <b>nexora.app</b>. Service fourni "tel quel", sans garantie de disponibilité 100%.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>2. Inscription</h3>
+      <p>Tu dois avoir au moins <b>13 ans</b> pour créer un compte. Tu t'engages à fournir des informations exactes (email valide) et à garder ton mot de passe secret.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>3. Utilisation acceptable</h3>
+      <p>Tu t'engages à ne pas :</p>
+      <ul>
+        <li>Utiliser Nexora à des fins illégales</li>
+        <li>Tenter de pirater, surcharger ou nuire au service</li>
+        <li>Utiliser des bots ou scripts automatisés</li>
+        <li>Stocker du contenu illégal, haineux ou nuisible</li>
+      </ul>
+    </div>
+
+    <div class="info-section">
+      <h3>4. Tes contenus</h3>
+      <p>Tu restes propriétaire de tes tâches. On ne les utilise pas, on ne les revend pas, on ne les analyse pas. Elles sont entièrement privées.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>5. Gratuité</h3>
+      <p>Nexora est 100% gratuit. Pas de pub, pas d'achat, pas d'abonnement. Si on ajoute des features premium un jour, on te le dira clairement avant.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>6. Limitation de responsabilité</h3>
+      <p>Nexora est un outil d'organisation, pas une solution mission-critique. On ne peut pas être tenus responsables d'oublis, de perte de données ou d'erreurs liés à son utilisation. Pense à exporter régulièrement ce qui est important.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>7. Modification du service</h3>
+      <p>On peut modifier, ajouter ou retirer des fonctionnalités à tout moment, sans préavis. On essaiera toujours de prévenir les changements importants.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>8. Suppression de compte</h3>
+      <p>Tu peux demander la suppression de ton compte à tout moment via <b>nexora.app@proton.me</b>. Toutes tes données seront effacées sous 30 jours.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>9. Loi applicable</h3>
+      <p>Ces CGU sont régies par le droit français. Tout litige relève des tribunaux compétents en France.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>10. Contact</h3>
+      <p>Une question, un problème ? <b>nexora.app@proton.me</b></p>
+    </div>
+  `;
+}
+
+// Hook renderInfoModalContent
+const _origRenderInfoLegal = renderInfoModalContent;
+renderInfoModalContent = function(type) {
+  if (type === 'privacy') return renderPrivacy();
+  if (type === 'cgu') return renderCGU();
+  return _origRenderInfoLegal(type);
+};
 
 // ==========================================
 //  GO
