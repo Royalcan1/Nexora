@@ -3068,6 +3068,134 @@ renderInfoModalContent = function(type) {
   if (type === 'cgu') return renderCGU();
   return _origRenderInfoLegal(type);
 };
+// ==========================================
+//  📲 WEB PUSH NOTIFICATIONS
+// ==========================================
+
+const VAPID_PUBLIC_KEY = 'BMzlJsWZpGajWEz40-R-aP00_qjuohAKsnQWn-Z-Zv_5o4DenAC2qmjCGXaSJZVbpWIXJjwRkd_DYux98jMbsto';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+async function isPushSupported() {
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+
+async function getCurrentPushSubscription() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    return await reg.pushManager.getSubscription();
+  } catch { return null; }
+}
+
+async function subscribeToPush() {
+  if (!await isPushSupported()) {
+    showConfirm({
+      icon: '⚠️',
+      title: 'Non supporté',
+      message: 'Ton navigateur ne supporte pas les notifications push. Sur iPhone, installe d\'abord Nexora sur ton écran d\'accueil.',
+      confirmText: 'OK'
+    });
+    return false;
+  }
+
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') {
+    showConfirm({
+      icon: '🚫',
+      title: 'Permission refusée',
+      message: 'Autorise les notifications dans les réglages de ton navigateur ou téléphone.',
+      confirmText: 'OK'
+    });
+    return false;
+  }
+
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+
+    const json = sub.toJSON();
+    const { error } = await db.from('push_subscriptions').upsert({
+      user_id: currentUser.id,
+      endpoint: json.endpoint,
+      p256dh: json.keys.p256dh,
+      auth: json.keys.auth
+    }, { onConflict: 'endpoint' });
+
+    if (error) throw error;
+    console.log('✅ Push subscription enregistrée');
+    return true;
+  } catch (err) {
+    console.error('Subscribe error:', err);
+    return false;
+  }
+}
+
+async function unsubscribeFromPush() {
+  const sub = await getCurrentPushSubscription();
+  if (!sub) return;
+  await db.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+  await sub.unsubscribe();
+}
+
+async function togglePushNotif(checkbox) {
+  if (checkbox.checked) {
+    const ok = await subscribeToPush();
+    if (!ok) checkbox.checked = false;
+  } else {
+    await unsubscribeFromPush();
+  }
+  document.getElementById('info-modal-body').innerHTML = renderNotifications();
+}
+
+const _origShowInfoModalPush = showInfoModal;
+showInfoModal = function(type) {
+  _origShowInfoModalPush(type);
+  if (type === 'notifications') {
+    setTimeout(async () => {
+      const sub = await getCurrentPushSubscription();
+      const isSubscribed = !!sub;
+
+      const existingToggle = document.querySelector('.notif-toggle-row input[type="checkbox"]');
+      if (existingToggle) {
+        existingToggle.checked = isSubscribed;
+        existingToggle.onchange = function() { togglePushNotif(this); };
+
+        const subEl = existingToggle.closest('.notif-toggle-row')?.querySelector('.notif-toggle-sub');
+        if (subEl) {
+          subEl.textContent = isSubscribed
+            ? '✅ Notifications push activées (chaque matin à 8h)'
+            : 'Notification push quotidienne avec tes tâches';
+        }
+      }
+
+      const timesSection = document.querySelector('.notif-times-section');
+      if (timesSection) timesSection.style.display = 'none';
+      const testSection = document.querySelector('.notif-test-section');
+      if (testSection) testSection.style.display = 'none';
+
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                          || window.navigator.standalone === true;
+      if (isMobile && !isStandalone) {
+        const warnHtml = `
+          <div class="notif-warn" style="margin-top:12px;">
+            📲 <b>Sur mobile</b> : installe d'abord Nexora sur ton écran d'accueil pour activer les notifications. Menu ⋯ → Installer.
+          </div>
+        `;
+        const toggleRow = document.querySelector('.notif-toggle-row');
+        if (toggleRow) toggleRow.insertAdjacentHTML('afterend', warnHtml);
+      }
+    }, 50);
+  }
+};
 
 // ==========================================
 //  GO
