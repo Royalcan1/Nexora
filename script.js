@@ -125,39 +125,26 @@ async function submitAuth() {
   errorEl.textContent = "";
   errorEl.style.color = "";
 
-  if (!email || !password) {
-    errorEl.textContent = "Email et mot de passe requis.";
-    return;
-  }
-  if (password.length < 6) {
-    errorEl.textContent = "Le mot de passe doit faire au moins 6 caractères.";
-    return;
-  }
+  if (!email || !password) { errorEl.textContent = "Email et mot de passe requis."; return; }
+  if (password.length < 6) { errorEl.textContent = "Le mot de passe doit faire au moins 6 caractères."; return; }
 
   try {
     if (authMode === "signup") {
       const firstName = document.getElementById("auth-firstname").value.trim();
       const lastName = document.getElementById("auth-lastname").value.trim();
-      if (!firstName) {
-        errorEl.textContent = "Ton prénom est requis.";
-        return;
-      }
+      if (!firstName) { errorEl.textContent = "Ton prénom est requis."; return; }
       const { data, error } = await db.auth.signUp({
-        email,
-        password,
+        email, password,
         options: { data: { first_name: firstName, last_name: lastName } }
       });
       if (error) throw error;
-      console.log("SIGNUP OK =", data);
       hideAuthModal();
-    } else {                                           // ← le else est bien DANS le try
+    } else {
       const { data, error } = await db.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      console.log("LOGIN OK =", data);
       hideAuthModal();
     }
   } catch (err) {
-    console.error("AUTH ERROR =", err);
     let msg = err.message || "Une erreur est survenue.";
     if (msg.includes("Invalid login credentials")) msg = "Email ou mot de passe incorrect.";
     if (msg.includes("User already registered")) msg = "Un compte existe déjà avec cet email.";
