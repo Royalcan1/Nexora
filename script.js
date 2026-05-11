@@ -114,7 +114,6 @@ function updateAuthModalUI() {
     switchText.textContent = "Déjà un compte ?";
     switchLink.textContent = "Se connecter";
   }
-  // 🆕 Champs nom/prénom uniquement en signup
   document.getElementById("auth-name-fields").style.display = authMode === "login" ? "none" : "block";
 }
 
@@ -276,7 +275,6 @@ async function loadTasks() {
 window.toggleTask = async function(id, currentDone) {
   if (!id) return;
 
-  // On regarde combien de tâches étaient en cours AVANT le toggle
   const activeBeforeCount = tasks.filter(t => !t.done).length;
 
   const { data, error } = await db
@@ -290,7 +288,6 @@ window.toggleTask = async function(id, currentDone) {
   }
   console.log("UPDATED TASK =", data);
 
-  // Si on vient de cocher la dernière tâche en cours -> on célèbre 🎉
   const justCompleted = !currentDone;
   if (justCompleted && activeBeforeCount === 1) {
     celebrate(id);
@@ -368,7 +365,6 @@ function render() {
   let active = tasks.filter(t => !t.done).sort((a, b) => ({ urgent: 0, medium: 1, normal: 2 }[a.priority] - { urgent: 0, medium: 1, normal: 2 }[b.priority]));
   let done = tasks.filter(t => t.done);
 
-  // Empty state global : aucune tâche du tout
   if (active.length === 0 && done.length === 0) {
     document.getElementById("output").innerHTML = `
       <div class="empty-state-big">
@@ -457,7 +453,7 @@ function toggleMoreMenu() {
 }
 
 // ==========================================
-//  HELPERS — détection priorité / temps (v2)
+//  HELPERS — détection priorité / temps / date
 // ==========================================
 
 function getPriority(text) {
@@ -493,6 +489,7 @@ function getTime(text) {
   if (/\b(révision|revision|réviser|reviser|fiche|lecture|lire|exercice|exo|relire)\b/.test(text)) return "45 min";
   return "30 min";
 }
+
 function getDueDate(text) {
   const lower = text.toLowerCase();
   const today = new Date();
@@ -588,6 +585,10 @@ function confirmCancel() {
 // ==========================================
 
 function getDisplayName() {
+  // Priorité : prénom stocké dans user_metadata
+  const meta = currentUser?.user_metadata;
+  if (meta?.first_name) return meta.first_name;
+  // Fallback : dérive du mail
   if (!currentUser?.email) return "toi";
   const prefix = currentUser.email.split("@")[0];
   const firstPart = prefix.split(/[._-]/)[0];
@@ -652,11 +653,9 @@ function addSuggestion(text) {
     input.value = text;
   }
   input.focus();
-  // Place le curseur à la fin
   input.setSelectionRange(input.value.length, input.value.length);
 }
 
-// Atténuation des chips quand l'utilisateur tape
 document.addEventListener("DOMContentLoaded", () => {
   const input = document.getElementById("input");
   if (input) {
@@ -746,12 +745,7 @@ async function fireReminder() {
 }
 
 async function testNotification() {
-  console.log("=== TEST NOTIFICATION ===");
-  console.log("Notification.permission:", typeof Notification !== "undefined" ? Notification.permission : "unsupported");
-
   const perm = await requestNotifPermission();
-  console.log("Permission après demande :", perm);
-
   if (perm !== "granted") {
     showConfirm({
       icon: "🚫",
@@ -764,10 +758,8 @@ async function testNotification() {
     return;
   }
 
-  // Notification test indépendante (marche même sans tâches en cours)
   try {
     const reg = await navigator.serviceWorker.ready;
-    console.log("SW ready, on envoie la notif...");
     await reg.showNotification("📚 Nexora", {
       body: "Test réussi ! 🎉 Tes rappels sont prêts.",
       icon: "/icon-192.png",
@@ -775,7 +767,6 @@ async function testNotification() {
       tag: "nexora-test",
       vibrate: [100, 50, 100]
     });
-    console.log("✅ Notification envoyée");
   } catch (e) {
     console.error("❌ Erreur notif :", e);
     showConfirm({
@@ -850,9 +841,7 @@ function renderNotifications() {
   return `
     <h2>🔔 Notifications</h2>
     <p class="info-subtitle">Reçois des rappels de tes tâches en cours</p>
-
     ${permBadge}
-
     <div class="notif-toggle-row">
       <div>
         <div class="notif-toggle-title">Activer les rappels</div>
@@ -863,20 +852,17 @@ function renderNotifications() {
         <span class="slider"></span>
       </label>
     </div>
-
     <div class="notif-times-section ${!s.enabled ? 'disabled' : ''}">
       <div class="notif-section-title">⏰ Horaires des rappels</div>
       ${timeRows}
       ${s.times.length < 6 ? `<button class="notif-add-time" onclick="addNotifTime()" ${!s.enabled ? 'disabled' : ''}>+ Ajouter un horaire</button>` : ''}
     </div>
-
     <div class="notif-test-section">
       <button class="btn primary" onclick="testNotification()">📤 Envoyer une notif de test</button>
     </div>
-
     <div class="notif-info">
       <p><b>📌 À savoir</b></p>
-      <p>Les rappels arrivent quand l'app est ouverte ou récente en arrière-plan. Pour des notifs même app fermée, on ajoutera plus tard un serveur push.</p>
+      <p>Les rappels arrivent quand l'app est ouverte ou récente en arrière-plan.</p>
       <p>Sur iPhone : nécessite iOS 16.4+ et Nexora installé sur l'écran d'accueil.</p>
     </div>
   `;
@@ -897,7 +883,6 @@ const COMPLETION_MESSAGES = [
 
 function showCompletionToast() {
   const msg = COMPLETION_MESSAGES[Math.floor(Math.random() * COMPLETION_MESSAGES.length)];
-
   const existing = document.getElementById("completion-toast");
   if (existing) existing.remove();
 
@@ -909,9 +894,7 @@ function showCompletionToast() {
     <div class="completion-toast-subtitle">${msg.subtitle}</div>
   `;
   document.body.appendChild(toast);
-
   requestAnimationFrame(() => toast.classList.add("show"));
-
   setTimeout(() => {
     toast.classList.remove("show");
     setTimeout(() => toast.remove(), 400);
@@ -922,7 +905,6 @@ function celebrate(taskId) {
   if (typeof confetti !== "function") return;
   showCompletionToast();
 
-  // Récupère la position du petit carré blanc (check-btn)
   let originX = 0.5, originY = 0.5;
   const taskEl = document.getElementById(`task-${taskId}`);
   if (taskEl) {
@@ -975,7 +957,7 @@ function finishEdit(el) {
 }
 
 // ==========================================
-//  📊 MODALS INFO (Dashboard / Support / Contact / À propos)
+//  📊 MODALS INFO
 // ==========================================
 
 const CONTACT_EMAIL = "nexora.app@proton.me";
@@ -1003,12 +985,16 @@ function hideInfoModal() {
 
 function renderInfoModalContent(type) {
   if (type === "notifications") return renderNotifications();
-  if (type === "avatar") return renderAvatar();
-  if (type === "dashboard") return renderDashboard();
-  if (type === "support") return renderSupport();
-  if (type === "contact") return renderContact();
-  if (type === "about") return renderAbout();
-  if (type === "install-ios") return renderInstallIOS();
+  if (type === "avatar")        return renderAvatar();
+  if (type === "dashboard")     return renderDashboard();
+  if (type === "support")       return renderSupport();
+  if (type === "contact")       return renderContact();
+  if (type === "about")         return renderAbout();
+  if (type === "install-ios")   return renderInstallIOS();
+  if (type === "privacy")       return renderPrivacy();
+  if (type === "cgu")           return renderCGU();
+  // Les types suivants sont gérés par leurs blocs override dans script.js :
+  // "categories", "focus", "calendar", "templates"
   return "";
 }
 
@@ -1037,31 +1023,15 @@ function renderDashboard() {
   return `
     <h2>📊 Dashboard</h2>
     <p class="info-subtitle">Tes statistiques en direct</p>
-
     <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-value">${active}</div>
-        <div class="stat-label">En cours</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${done}</div>
-        <div class="stat-label">Terminées</div>
-      </div>
-      <div class="stat-card accent">
-        <div class="stat-value">${completion}%</div>
-        <div class="stat-label">Complétion</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${total}</div>
-        <div class="stat-label">Total</div>
-      </div>
+      <div class="stat-card"><div class="stat-value">${active}</div><div class="stat-label">En cours</div></div>
+      <div class="stat-card"><div class="stat-value">${done}</div><div class="stat-label">Terminées</div></div>
+      <div class="stat-card accent"><div class="stat-value">${completion}%</div><div class="stat-label">Complétion</div></div>
+      <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Total</div></div>
     </div>
-
     <div class="info-section">
       <h3>Répartition des tâches en cours</h3>
-      ${active === 0 ? `
-        <p style="opacity:0.6;font-size:13px;">Aucune tâche en cours 🎉</p>
-      ` : `
+      ${active === 0 ? `<p style="opacity:0.6;font-size:13px;">Aucune tâche en cours 🎉</p>` : `
         <div class="priority-bars">
           <div class="priority-bar-row">
             <div class="priority-bar-label"><span class="priority-dot urgent"></span>Urgent</div>
@@ -1088,13 +1058,11 @@ function renderSupport() {
   return `
     <h2>💬 Support</h2>
     <p class="info-subtitle">Tout ce qu'il faut savoir pour bien utiliser Nexora</p>
-
     <div class="info-section">
       <h3>Ajouter des tâches</h3>
       <p>Pour ajouter <b>plusieurs tâches d'un coup</b>, sépare-les avec <kbd>+</kbd>, <kbd>,</kbd> ou <kbd>/</kbd>.</p>
       <p style="opacity:0.7;font-size:13px;">Exemple : <i>maths examen demain + devoir français + réviser bio</i></p>
     </div>
-
     <div class="info-section">
       <h3>Détection automatique</h3>
       <p>Nexora analyse le texte pour deviner la priorité et le temps estimé. Quelques mots-clés reconnus :</p>
@@ -1104,7 +1072,6 @@ function renderSupport() {
         <li><b>Normal</b> : tout le reste</li>
       </ul>
     </div>
-
     <div class="info-section">
       <h3>Modifier une tâche</h3>
       <p>Clique sur le <b>texte</b> d'une tâche pour le modifier directement.</p>
@@ -1113,12 +1080,10 @@ function renderSupport() {
         <li><kbd>Échap</kbd> pour annuler</li>
       </ul>
     </div>
-
     <div class="info-section">
       <h3>Supprimer / archiver</h3>
       <p>Coche une tâche pour la passer en <i>terminées</i>. Utilise le bouton <b>🗑️ Vider</b> pour tout nettoyer d'un coup.</p>
     </div>
-
     <div class="info-section">
       <h3>Besoin d'aide ?</h3>
       <p>Un bug, une suggestion ? Passe par la page <b>Contact</b> du menu pour nous écrire 📩</p>
@@ -1132,14 +1097,11 @@ function renderContact() {
   return `
     <h2>📩 Contact</h2>
     <p class="info-subtitle">Une question, un bug, une suggestion ? On est à l'écoute.</p>
-
     <div class="contact-card">
       <div style="font-size:13px;opacity:0.7;margin-bottom:6px;">Notre adresse email</div>
       <div class="contact-email">${CONTACT_EMAIL}</div>
     </div>
-
     <a class="btn-mailto" href="mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}">✉️ Envoyer un email</a>
-
     <div class="info-section" style="margin-top:20px;">
       <p style="font-size:13px;opacity:0.6;text-align:center;">
         On répond généralement sous 48h.<br>
@@ -1154,7 +1116,6 @@ function renderAbout() {
   return `
     <h2>ℹ️ À propos</h2>
     <p class="info-subtitle">L'app de gestion de tâches pour les étudiants</p>
-
     <div class="info-section">
       <p class="about-tagline">
         <b>Nexora</b> est née d'un constat simple : les étudiants jonglent avec
@@ -1166,17 +1127,14 @@ function renderAbout() {
         Nexora s'occupe de prioriser. Tu coches quand c'est fini. C'est tout.
       </p>
     </div>
-
     <div class="info-section">
       <h3>Créateur</h3>
       <p>Imaginé et développé par <b>${CREATOR_NAME}</b>, étudiant et passionné de productivité.</p>
     </div>
-
     <div class="info-section">
       <h3>Vie privée</h3>
       <p>Tes tâches t'appartiennent. Elles sont stockées de façon sécurisée et personne d'autre que toi ne peut y accéder.</p>
     </div>
-
     <div class="about-meta">
       <span>Version ${APP_VERSION}</span>
       <span>© ${year} Nexora</span>
@@ -1184,15 +1142,14 @@ function renderAbout() {
     </div>
   `;
 }
+
 function renderInstallIOS() {
   return `
     <h2>📲 Installer Nexora</h2>
     <p class="info-subtitle">Sur iPhone / iPad, en 3 étapes</p>
-
     <div class="install-step">
       <div class="install-step-num">1</div>
-      <div class="install-step-text">Appuie sur le bouton <b>Partager</b> 
-        <span class="ios-share-icon">⎙</span> en bas de Safari</div>
+      <div class="install-step-text">Appuie sur le bouton <b>Partager</b> <span class="ios-share-icon">⎙</span> en bas de Safari</div>
     </div>
     <div class="install-step">
       <div class="install-step-num">2</div>
@@ -1202,12 +1159,114 @@ function renderInstallIOS() {
       <div class="install-step-num">3</div>
       <div class="install-step-text">Appuie sur <b>Ajouter</b> en haut à droite</div>
     </div>
-
     <div class="info-section" style="margin-top:20px;">
       <p style="font-size:13px;opacity:0.6;text-align:center;">
         L'icône Nexora apparaîtra avec tes autres apps.<br>
         Tu pourras la lancer comme une vraie app native ! ✨
       </p>
+    </div>
+  `;
+}
+
+// ==========================================
+//  🔒 POLITIQUE DE CONFIDENTIALITÉ
+// ==========================================
+
+function renderPrivacy() {
+  const year = new Date().getFullYear();
+  return `
+    <h2>🔒 Confidentialité</h2>
+    <p class="info-subtitle">Comment Nexora gère tes données</p>
+
+    <div class="info-section">
+      <h3>Données collectées</h3>
+      <p>Nexora collecte uniquement les données nécessaires à son fonctionnement :</p>
+      <ul>
+        <li>Ton <b>adresse email</b> pour l'authentification</li>
+        <li>Tes <b>tâches</b> (texte, priorité, statut, dates)</li>
+        <li>Tes <b>préférences</b> (avatar, matières, thème, notifications)</li>
+      </ul>
+    </div>
+
+    <div class="info-section">
+      <h3>Stockage & sécurité</h3>
+      <p>Toutes les données sont stockées sur <b>Supabase</b>, avec chiffrement en transit (HTTPS) et au repos. Chaque utilisateur n'a accès qu'à ses propres données grâce aux politiques de sécurité (Row Level Security).</p>
+    </div>
+
+    <div class="info-section">
+      <h3>Ce qu'on ne fait pas</h3>
+      <ul>
+        <li>❌ On ne vend pas tes données</li>
+        <li>❌ On n'affiche pas de publicité</li>
+        <li>❌ On ne partage pas tes données avec des tiers</li>
+        <li>❌ On ne fait pas de tracking comportemental</li>
+      </ul>
+    </div>
+
+    <div class="info-section">
+      <h3>Tes droits</h3>
+      <p>Tu peux à tout moment :</p>
+      <ul>
+        <li>Supprimer toutes tes tâches depuis l'app</li>
+        <li>Demander la suppression de ton compte en contactant <b>${CONTACT_EMAIL}</b></li>
+      </ul>
+    </div>
+
+    <div class="info-section">
+      <h3>Contact</h3>
+      <p>Pour toute question relative à tes données : <b>${CONTACT_EMAIL}</b></p>
+    </div>
+
+    <div class="about-meta">
+      <span>Nexora v${APP_VERSION}</span>
+      <span>© ${year}</span>
+    </div>
+  `;
+}
+
+// ==========================================
+//  📜 CONDITIONS GÉNÉRALES D'UTILISATION
+// ==========================================
+
+function renderCGU() {
+  const year = new Date().getFullYear();
+  return `
+    <h2>📜 CGU</h2>
+    <p class="info-subtitle">Conditions Générales d'Utilisation — Nexora</p>
+
+    <div class="info-section">
+      <h3>Service</h3>
+      <p>Nexora est une application web gratuite d'organisation de tâches, développée et maintenue par Nicolas. L'accès au service est libre, sans engagement.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>Utilisation</h3>
+      <p>Tu t'engages à utiliser Nexora de façon licite et à ne pas tenter d'accéder aux données d'autres utilisateurs. L'app est destinée à un usage personnel et éducatif.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>Compte utilisateur</h3>
+      <p>Tu es responsable de la confidentialité de ton mot de passe. En cas de perte d'accès, utilise la fonction "Mot de passe oublié". Nous nous réservons le droit de suspendre un compte en cas d'utilisation abusive.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>Disponibilité</h3>
+      <p>Nexora est fourni "tel quel", sans garantie de disponibilité continue. Des maintenances peuvent interrompre le service ponctuellement. Nous faisons notre possible pour minimiser les interruptions.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>Modifications</h3>
+      <p>Ces CGU peuvent être mises à jour. Les changements importants seront signalés dans l'app. L'utilisation continue du service vaut acceptation.</p>
+    </div>
+
+    <div class="info-section">
+      <h3>Contact</h3>
+      <p>Pour toute question : <b>${CONTACT_EMAIL}</b></p>
+    </div>
+
+    <div class="about-meta">
+      <span>Nexora v${APP_VERSION}</span>
+      <span>© ${year}</span>
     </div>
   `;
 }
@@ -1248,17 +1307,14 @@ document.addEventListener("click", (e) => {
     profileMenu.classList.add("closed");
   }
 
-  // 🆕 Fermeture des modals en cliquant sur le backdrop
   const authModal = document.getElementById("auth-modal");
   if (e.target === authModal) hideAuthModal();
-
   const infoModal = document.getElementById("info-modal");
   if (e.target === infoModal) hideInfoModal();
-
   const resetModal = document.getElementById("reset-modal");
   if (e.target === resetModal) hideResetModal();
   const confirmModal = document.getElementById("confirm-modal");
-if (e.target === confirmModal) confirmCancel();
+  if (e.target === confirmModal) confirmCancel();
 });
 
 // ==========================================
@@ -1306,7 +1362,6 @@ function toggleProfileMenu() {
   const menu = document.getElementById("profile-dropdown");
   menu.classList.toggle("open");
   menu.classList.toggle("closed");
-  // Ferme l'autre menu si ouvert
   const other = document.getElementById("more-dropdown");
   other.classList.remove("open");
   other.classList.add("closed");
@@ -1320,7 +1375,6 @@ async function setAvatar(emoji) {
   }
   updateAvatarUI();
   updateHero();
-  // Re-render le contenu du modal pour mettre à jour l'état "selected"
   const body = document.getElementById("info-modal-body");
   if (body) body.innerHTML = renderAvatar();
 }
@@ -1342,10 +1396,48 @@ function setAvatarTab(name) {
   if (body) body.innerHTML = renderAvatar();
 }
 
+// Sauvegarde du prénom / nom depuis la modal profil
+async function saveProfileName() {
+  const firstInput = document.getElementById("profile-firstname-input");
+  const lastInput  = document.getElementById("profile-lastname-input");
+  if (!firstInput) return;
+
+  const firstName = firstInput.value.trim();
+  const lastName  = lastInput ? lastInput.value.trim() : "";
+
+  if (!firstName) {
+    firstInput.style.borderColor = "#ef4444";
+    setTimeout(() => { firstInput.style.borderColor = ""; }, 2000);
+    return;
+  }
+
+  const { error } = await db.auth.updateUser({ data: { first_name: firstName, last_name: lastName } });
+  if (error) { console.error("PROFILE SAVE ERROR =", error); return; }
+
+  if (currentUser) {
+    currentUser.user_metadata = {
+      ...(currentUser.user_metadata || {}),
+      first_name: firstName,
+      last_name: lastName
+    };
+  }
+
+  updateHero();
+
+  // Feedback visuel sur le bouton
+  const feedbackEl = document.getElementById("profile-save-feedback");
+  if (feedbackEl) {
+    feedbackEl.textContent = "✅ Enregistré !";
+    setTimeout(() => { feedbackEl.textContent = ""; }, 2500);
+  }
+}
+
 function renderAvatar() {
-  const current = getCurrentAvatar();
+  const current  = getCurrentAvatar();
   const fallback = getAvatarFallback();
-  const previewContent = current || fallback;
+  const meta     = currentUser?.user_metadata || {};
+  const firstName = (meta.first_name || "").replace(/"/g, "&quot;");
+  const lastName  = (meta.last_name  || "").replace(/"/g, "&quot;");
 
   const tabs = Object.keys(AVATAR_CATEGORIES).map(name => `
     <button class="avatar-tab ${name === currentAvatarTab ? 'active' : ''}" onclick="setAvatarTab('${name}')">${name}</button>
@@ -1356,11 +1448,24 @@ function renderAvatar() {
   `).join('');
 
   return `
-    <h2>🎭 Mon avatar</h2>
-    <p class="info-subtitle">Choisis l'emoji qui te représente</p>
+    <h2>👤 Mon profil</h2>
+    <p class="info-subtitle">Personnalise ton compte</p>
+
+    <div class="profile-name-section">
+      <label class="profile-input-label">Prénom</label>
+      <input class="profile-input" id="profile-firstname-input" type="text"
+             placeholder="Ton prénom" value="${firstName}" maxlength="50">
+      <label class="profile-input-label">Nom (optionnel)</label>
+      <input class="profile-input" id="profile-lastname-input" type="text"
+             placeholder="Ton nom" value="${lastName}" maxlength="50">
+      <button class="btn primary" onclick="saveProfileName()" style="margin-top:12px;">💾 Enregistrer</button>
+      <div class="profile-save-feedback" id="profile-save-feedback"></div>
+    </div>
+
+    <div class="profile-section-divider"></div>
 
     <div class="avatar-current">
-      <div class="avatar-current-preview">${previewContent}</div>
+      <div class="avatar-current-preview">${current || fallback}</div>
       <div class="avatar-current-text">
         <div class="avatar-current-title">${current ? 'Avatar actuel' : 'Avatar par défaut'}</div>
         <div class="avatar-current-sub">${current ? 'Clique sur un autre emoji pour changer' : 'Choisis-en un dans la liste'}</div>
@@ -1374,10 +1479,31 @@ function renderAvatar() {
 }
 
 // ==========================================
+//  ☀️ MODE CLAIR / SOMBRE
+// ==========================================
+
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('theme-light');
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  // Mettre à jour le label du menu
+  const btn = document.getElementById('theme-toggle-item');
+  if (btn) btn.textContent = isLight ? '🌙 Mode sombre' : '☀️ Mode clair';
+  // Mettre à jour theme-color mobile
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = isLight ? '#f5f7fa' : '#0b1220';
+}
+
+// Initialise le bon label au chargement
+document.addEventListener('DOMContentLoaded', () => {
+  const stored = localStorage.getItem('theme') || 'dark';
+  const btn = document.getElementById('theme-toggle-item');
+  if (btn) btn.textContent = stored === 'light' ? '🌙 Mode sombre' : '☀️ Mode clair';
+});
+
+// ==========================================
 //  📲 PWA : Service Worker + Install Prompt
 // ==========================================
 
-// Détection
 function isStandalonePWA() {
   return window.matchMedia("(display-mode: standalone)").matches
     || window.navigator.standalone === true;
@@ -1389,8 +1515,6 @@ function isIOS() {
 }
 
 let deferredInstallPrompt = null;
-
-// Enregistrement du service worker
 let waitingWorker = null;
 
 if ("serviceWorker" in navigator) {
@@ -1405,13 +1529,11 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/sw.js").then((reg) => {
       console.log("SW registered:", reg.scope);
 
-      // SW déjà en attente au chargement (cas où l'user revient sans avoir update)
       if (reg.waiting && navigator.serviceWorker.controller) {
         waitingWorker = reg.waiting;
         showUpdateBanner();
       }
 
-      // Détection d'une nouvelle version qui s'installe
       reg.addEventListener("updatefound", () => {
         const newSW = reg.installing;
         if (!newSW) return;
@@ -1423,7 +1545,6 @@ if ("serviceWorker" in navigator) {
         });
       });
 
-      // Vérifie les maj toutes les 30 min tant que l'app est ouverte
       setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
     }).catch((err) => console.error("SW registration failed:", err));
   });
@@ -1442,52 +1563,39 @@ window.dismissUpdateBanner = function() {
 window.applyUpdate = function() {
   if (waitingWorker) {
     waitingWorker.postMessage({ type: "SKIP_WAITING" });
-    // controllerchange déclenche le reload automatiquement après
   } else {
     window.location.reload();
   }
 };
 
-// Capture du prompt natif (Chrome / Android / Edge)
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
   refreshInstallButtonVisibility();
 });
 
-// Décide si on affiche le bouton "Installer l'app"
 function refreshInstallButtonVisibility() {
   const btn = document.getElementById("install-menu-item");
   if (!btn) return;
-
-  // Déjà installée → on cache
   if (isStandalonePWA()) { btn.style.display = "none"; return; }
-
-  // iOS → on affiche (instructions custom)
   if (isIOS()) { btn.style.display = "block"; return; }
-
-  // Autres : visible uniquement si le prompt natif est dispo
   btn.style.display = deferredInstallPrompt ? "block" : "none";
 }
 
 window.installApp = async function() {
-  // Ferme le menu ⋯
   const menu = document.getElementById("more-dropdown");
   if (menu) { menu.classList.remove("open"); menu.classList.add("closed"); }
 
-  // iOS → modal d'instructions custom
   if (isIOS()) {
     showInfoModal("install-ios");
     return;
   }
 
-  // Pas de prompt natif dispo → fallback iOS-style instructions
   if (!deferredInstallPrompt) {
     showInfoModal("install-ios");
     return;
   }
 
-  // ✨ Confirmation custom dans notre style avant le prompt natif
   const confirmed = await showConfirm({
     icon: "📲",
     title: "Installer Nexora",
@@ -1496,7 +1604,6 @@ window.installApp = async function() {
   });
   if (!confirmed) return;
 
-  // Déclenche le prompt natif (obligatoire pour l'install)
   deferredInstallPrompt.prompt();
   const { outcome } = await deferredInstallPrompt.userChoice;
   console.log("Install outcome:", outcome);
@@ -1504,17 +1611,29 @@ window.installApp = async function() {
   refreshInstallButtonVisibility();
 };
 
-// Quand l'app est installée → on cache le bouton
 window.addEventListener("appinstalled", () => {
   deferredInstallPrompt = null;
   refreshInstallButtonVisibility();
   console.log("Nexora installé !");
 });
 
-// Vérification initiale dès le chargement
 document.addEventListener("DOMContentLoaded", refreshInstallButtonVisibility);
 
 // ==========================================
-//  GO
+//  ⬇️ PLACE ICI TES BLOCS D'OVERRIDE (avant initAuth)
+//  Ordre attendu :
+//  16. Mode Focus / Pomodoro
+//  17. Streaks + Gamification
+//  18. Tâches récurrentes
+//  19. Drag & Drop
+//  20. Calendrier
+//  21. Onboarding
+//  22. Animations hero (override updateHero)
+//  23. Templates (override renderInfoModalContent)
+//  24. Catégories (override renderInfoModalContent + addTask)
+// ==========================================
+
+// ==========================================
+//  GO — TOUJOURS EN DERNIER
 // ==========================================
 initAuth();
