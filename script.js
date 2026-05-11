@@ -2804,7 +2804,8 @@ const ICON_PALETTE = [
 ];
  
 function getCategories() {
-  return currentUser?.user_metadata?.categories || DEFAULT_CATEGORIES;
+  const saved = currentUser?.user_metadata?.categories;
+  return (Array.isArray(saved) && saved.length > 0) ? saved : DEFAULT_CATEGORIES;
 }
  
 function getCategoryByName(name) {
