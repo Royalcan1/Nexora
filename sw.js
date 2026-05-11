@@ -68,3 +68,40 @@ self.addEventListener("notificationclick", (event) => {
     })
   );
 });
+// ==========================================
+// 📲 PUSH NOTIFICATIONS
+// ==========================================
+self.addEventListener('push', function(event) {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { title: '📚 Nexora', body: event.data ? event.data.text() : 'Tu as des tâches' };
+  }
+
+  const title = data.title || '📚 Nexora';
+  const options = {
+    body: data.body || 'Tu as des tâches en cours',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    tag: data.tag || 'nexora',
+    renotify: true,
+    vibrate: [100, 50, 100],
+    data: { url: data.url || 'https://nex0ra.com' }
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  const url = event.notification.data?.url || 'https://nex0ra.com';
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then(list => {
+      for (const c of list) {
+        if (c.url.includes('nex0ra.com') && 'focus' in c) return c.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(url);
+    })
+  );
+});
