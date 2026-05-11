@@ -2992,12 +2992,7 @@ function renderPrivacy() {
     </div>
 
     <div class="info-section">
-      <h3>7. IA</h3>
-      <p>Quand tu utilises ✨ <b>Découper avec l'IA</b>, le texte de ta tâche est envoyé à <b>Anthropic</b> (Claude) pour générer les sous-tâches. Anthropic ne stocke pas tes données et ne les utilise pas pour entraîner ses modèles.</p>
-    </div>
-
-    <div class="info-section">
-      <h3>8. Mineurs</h3>
+      <h3>7. Mineurs</h3>
       <p>Nexora s'adresse aux étudiants de 13 ans et plus. Si tu as moins de 15 ans, demande à un parent avant de créer un compte.</p>
     </div>
   `;
