@@ -2891,6 +2891,18 @@ async function saveEditCategory() {
  
 async function deleteCategory(index) {
   const cats = [...getCategories()];
+
+  // 🆕 garde-fou : pas de suppression si dernière matière
+  if (cats.length <= 1) {
+    showConfirm({
+      icon: "⚠️",
+      title: "Action impossible",
+      message: "Tu dois garder au moins une matière. Utilise « Réinitialiser » pour revenir aux matières par défaut.",
+      confirmText: "OK"
+    });
+    return;
+  }
+  
   const cat = cats[index];
   if (!cat) return;
  
