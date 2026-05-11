@@ -135,24 +135,22 @@ async function submitAuth() {
   }
 
   try {
-   if (authMode === "signup") {
-  // 🆕 Récupère et valide le prénom
-  const firstName = document.getElementById("auth-firstname").value.trim();
-  const lastName = document.getElementById("auth-lastname").value.trim();
-  if (!firstName) {
-    errorEl.textContent = "Ton prénom est requis.";
-    return;
-  }
-  const { data, error } = await db.auth.signUp({
-    email,
-    password,
-    options: { data: { first_name: firstName, last_name: lastName } }
-  });
-  if (error) throw error;
-  console.log("SIGNUP OK =", data);
-  hideAuthModal();
-}
-    } else {
+    if (authMode === "signup") {
+      const firstName = document.getElementById("auth-firstname").value.trim();
+      const lastName = document.getElementById("auth-lastname").value.trim();
+      if (!firstName) {
+        errorEl.textContent = "Ton prénom est requis.";
+        return;
+      }
+      const { data, error } = await db.auth.signUp({
+        email,
+        password,
+        options: { data: { first_name: firstName, last_name: lastName } }
+      });
+      if (error) throw error;
+      console.log("SIGNUP OK =", data);
+      hideAuthModal();
+    } else {                                           // ← le else est bien DANS le try
       const { data, error } = await db.auth.signInWithPassword({ email, password });
       if (error) throw error;
       console.log("LOGIN OK =", data);
