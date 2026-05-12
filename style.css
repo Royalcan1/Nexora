@@ -239,28 +239,39 @@ body.logged-out .header-inner { justify-content: center; }
 
 /* 🔻 FOOTER */
 .app-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 10px 16px;
-  font-size: 12px;
-  opacity: 0.45;
-  background: transparent;
+  position: static;              /* posé naturellement à la fin */
+  margin-top: 80px;              /* respire au-dessus */
+  padding: 24px 16px 32px;
+  text-align: center;
+  font-size: 13px;
+  opacity: 0.55;
+  color: var(--text-secondary, #94a3b8);
+  border-top: 1px solid rgba(255,255,255,0.05);
 }
-.app-footer a {
-  cursor: pointer;
-  text-decoration: none;
-  color: inherit;
-}
-.app-footer a:hover { opacity: 1; }
 
-body { padding-bottom: 100px !important; }
+.app-footer a,
+.app-footer button {
+  color: inherit;
+  margin: 0 8px;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.app-footer a:hover,
+.app-footer button:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* En mode clair */
+html.theme-light .app-footer {
+  border-top-color: rgba(0,0,0,0.06);
+  color: #64748b;
+}
 
 /* ⚠️ MODAL DE CONFIRMATION */
 .confirm-modal-content { max-width: 380px; text-align: center; }
