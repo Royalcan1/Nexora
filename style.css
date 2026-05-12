@@ -239,23 +239,13 @@ body.logged-out .header-inner { justify-content: center; }
 
 /* 🔻 FOOTER */
 .app-footer {
-  position: static !important;
-  display: block !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  margin: 80px 0 0 0 !important;
-  padding: 24px 16px 32px !important;
-  text-align: center !important;
+  position: static;
+  margin-top: 60px;
+  padding: 24px 16px 32px;
+  text-align: center;
   font-size: 13px;
   opacity: 0.55;
   border-top: 1px solid rgba(255,255,255,0.06);
-  box-sizing: border-box;
-  /* Reset si parent est flex ou grid */
-  flex: 1 0 100% !important;
-  align-self: stretch !important;
-  grid-column: 1 / -1 !important;
-  float: none !important;
-  clear: both !important;
 }
 
 .app-footer a,
@@ -268,18 +258,12 @@ body.logged-out .header-inner { justify-content: center; }
   cursor: pointer;
   font-size: inherit;
   font-family: inherit;
-  opacity: 0.9;
 }
 
 .app-footer a:hover,
 .app-footer button:hover {
   opacity: 1;
   text-decoration: underline;
-}
-
-html.theme-light .app-footer {
-  border-top-color: rgba(0,0,0,0.06);
-  color: #64748b;
 }
 
 /* ⚠️ MODAL DE CONFIRMATION */
